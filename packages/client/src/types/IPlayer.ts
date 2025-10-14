@@ -1,19 +1,14 @@
-import { ITask } from './ITask';
+import { ITask, IPlayer } from '@spacer/shared';
 
 /**
- * Game player interface.
- * Represents a player in the active game state.
+ * Client player interface.
+ * Represents a player in the active game state on the client.
+ * Extends the base player with client-specific fields.
  */
-export interface IPlayer {
-  /**
-   * Unique player identifier.
-   * @description Generated using timestamp-based format.
-   */
-  id: string;
-
+export interface IClientPlayer extends IPlayer {
   /**
    * Socket.IO connection ID.
-   * @description Maps to the client's WebSocket connection.
+   * @description Required for active game players on client.
    */
   socketId: string;
 

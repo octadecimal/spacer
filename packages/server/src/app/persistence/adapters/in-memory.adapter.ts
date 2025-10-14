@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import {
-  IPersistenceAdapter,
-  IPersistedPlayer,
-  IPersistedTask,
-} from '../../../types';
+import { IPersistedTask } from '../../../types/IPersistedTask';
+import { IPersistenceAdapter, IServerPlayer } from '../../../types';
 
 /**
  * In-Memory Persistence Adapter.
@@ -20,7 +17,7 @@ import {
 @Injectable()
 export class InMemoryPersistenceAdapter implements IPersistenceAdapter {
   // In-memory storage using Maps for O(1) lookups.
-  private players: Map<string, IPersistedPlayer> = new Map();
+  private players: Map<string, IServerPlayer> = new Map();
   private tasks: Map<string, IPersistedTask> = new Map();
   private playerTasks: Map<string, Set<string>> = new Map(); // playerId -> Set<taskId>
 
@@ -28,9 +25,9 @@ export class InMemoryPersistenceAdapter implements IPersistenceAdapter {
   async createPlayer(
     playerId: string,
     socketId?: string
-  ): Promise<IPersistedPlayer> {
+  ): Promise<IServerPlayer> {
     const now = Date.now();
-    const player: IPersistedPlayer = {
+    const player: IServerPlayer = {
       id: playerId,
       socketId,
       totalTasksCompleted: 0,
@@ -46,11 +43,11 @@ export class InMemoryPersistenceAdapter implements IPersistenceAdapter {
     return player;
   }
 
-  async getPlayer(playerId: string): Promise<IPersistedPlayer | null> {
+  async getPlayer(playerId: string): Promise<IServerPlayer | null> {
     return this.players.get(playerId) || null;
   }
 
-  async updatePlayer(player: IPersistedPlayer): Promise<void> {
+  async updatePlayer(player: IServerPlayer): Promise<void> {
     player.lastActiveAt = Date.now();
     this.players.set(player.id, player);
   }
@@ -116,9 +113,13 @@ export class InMemoryPersistenceAdapter implements IPersistenceAdapter {
     }
   }
 
+  async getAllTasks(): Promise<IPersistedTask[]> {
+    return Array.from(this.tasks.values());
+  }
+
   // Batch operations for performance
   async savePlayerSnapshot(
-    player: IPersistedPlayer,
+    player: IServerPlayer,
     tasks: IPersistedTask[]
   ): Promise<void> {
     // Update player

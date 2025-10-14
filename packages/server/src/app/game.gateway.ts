@@ -9,7 +9,8 @@ import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
 import { GamePersistenceService } from './persistence/persistence.service';
 import { IPersistedTask } from '../types/IPersistedTask';
-import { ITask, IPlayer } from '../types';
+import { IServerPlayer } from '../types/IServerPlayer';
+import { ITask } from '@spacer/shared';
 
 /**
  * WebSocket Gateway - Server-side game logic hub.
@@ -36,7 +37,8 @@ export class GameGateway {
 
   // In-memory player storage for real-time operations (Map for O(1) lookups).
   // This provides fast access for active gameplay while persistence handles durability.
-  private activePlayers: Map<string, IPlayer> = new Map();
+  private activePlayers: Map<string, IServerPlayer & { tasks: ITask[] }> =
+    new Map();
 
   /**
    * Constructor.
@@ -118,9 +120,13 @@ export class GameGateway {
       );
 
       // Create active player instance for real-time operations.
-      const activePlayer: IPlayer = {
+      const activePlayer: IServerPlayer & { tasks: ITask[] } = {
         id: playerId,
         socketId: client.id,
+        totalTasksCompleted: 0,
+        totalMiningTime: 0,
+        createdAt: Date.now(),
+        lastActiveAt: Date.now(),
         tasks: activeTasks,
       };
 
@@ -187,7 +193,7 @@ export class GameGateway {
     const task: ITask = {
       id: `task_${Date.now()}`, // Unique task ID
       name: data.taskName, // Task name from client
-      duration: 10000, // Fixed duration (10 seconds)
+      duration: 1500, // Fixed duration (1.5 seconds) - testing hot reload again
       startTime: Date.now(), // Server timestamp (prevents cheating)
       completed: false, // Initial state
     };

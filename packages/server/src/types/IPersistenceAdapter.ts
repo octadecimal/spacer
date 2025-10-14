@@ -1,5 +1,5 @@
-import { IPersistedPlayer } from './IPersistedPlayer';
-import { IPersistedTask } from './IPersistedTask';
+import { IServerPlayer } from './IServerPlayer';
+import type { IPersistedTask } from './IPersistedTask';
 
 /**
  * Persistence adapter interface.
@@ -13,21 +13,21 @@ export interface IPersistenceAdapter {
    * @param socketId - Optional socket connection ID for active sessions.
    * @returns Promise resolving to the created player.
    */
-  createPlayer(playerId: string, socketId?: string): Promise<IPersistedPlayer>;
+  createPlayer(playerId: string, socketId?: string): Promise<IServerPlayer>;
 
   /**
    * Retrieves a player by their unique identifier.
    * @param playerId - The player's unique identifier.
    * @returns Promise resolving to the player or null if not found.
    */
-  getPlayer(playerId: string): Promise<IPersistedPlayer | null>;
+  getPlayer(playerId: string): Promise<IServerPlayer | null>;
 
   /**
    * Updates an existing player's data.
    * @param player - The player object with updated data.
    * @returns Promise that resolves when update is complete.
    */
-  updatePlayer(player: IPersistedPlayer): Promise<void>;
+  updatePlayer(player: IServerPlayer): Promise<void>;
 
   /**
    * Removes a player and all associated data.
@@ -65,6 +65,12 @@ export interface IPersistenceAdapter {
    */
   deleteTask(taskId: string): Promise<void>;
 
+  /**
+   * Retrieves all tasks from the persistence layer.
+   * @returns Promise resolving to array of all tasks.
+   */
+  getAllTasks(): Promise<IPersistedTask[]>;
+
   // Batch operations for performance
   /**
    * Saves a complete player snapshot with all tasks atomically.
@@ -73,7 +79,7 @@ export interface IPersistenceAdapter {
    * @returns Promise that resolves when snapshot is saved.
    */
   savePlayerSnapshot(
-    player: IPersistedPlayer,
+    player: IServerPlayer,
     tasks: IPersistedTask[]
   ): Promise<void>;
 

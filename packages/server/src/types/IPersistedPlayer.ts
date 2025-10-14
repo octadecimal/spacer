@@ -1,20 +1,11 @@
+import { IPlayer } from '@spacer/shared';
+
 /**
- * Persisted player data structure.
- * Represents player data as stored in persistence layer.
+ * Server player interface.
+ * Represents player data as stored in persistence layer on the server.
+ * Extends the base player with server-specific persistence fields.
  */
-export interface IPersistedPlayer {
-  /**
-   * Unique player identifier.
-   * @description Generated using timestamp-based format.
-   */
-  id: string;
-
-  /**
-   * Socket.IO connection ID.
-   * @description Only present for active sessions, undefined for offline players.
-   */
-  socketId?: string;
-
+export interface IServerPlayer extends IPlayer {
   /**
    * Total number of tasks completed by this player.
    * @description Incremented each time a task is completed.

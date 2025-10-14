@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {
+import type { IPersistedTask } from '../../types/IPersistedTask';
+import type {
   IPersistenceAdapter,
   IPersistenceService,
-  IPersistedPlayer,
-  IPersistedTask,
+  IServerPlayer,
 } from '../../types';
 
 /**
@@ -44,9 +44,13 @@ export class GamePersistenceService implements IPersistenceService {
       }
 
       return player;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to create/get player ${playerId}:`, error);
-      throw new Error(`Persistence error: ${error.message}`);
+      throw new Error(
+        `Persistence error: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -76,9 +80,13 @@ export class GamePersistenceService implements IPersistenceService {
 
       await this.adapter.createTask(task);
       console.log(`Saved task ${task.id} for player ${task.playerId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to save task ${task.id}:`, error);
-      throw new Error(`Failed to save task: ${error.message}`);
+      throw new Error(
+        `Failed to save task: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -99,7 +107,7 @@ export class GamePersistenceService implements IPersistenceService {
   public async completeTask(taskId: string): Promise<void> {
     try {
       // Get task, update completion status, save back.
-      const tasks = Array.from((this.adapter as any).tasks?.values() || []);
+      const tasks = await this.adapter.getAllTasks();
       const task = tasks.find((t: IPersistedTask) => t.id === taskId);
 
       if (task) {
@@ -117,7 +125,7 @@ export class GamePersistenceService implements IPersistenceService {
 
         console.log(`Completed task ${taskId} for player ${task.playerId}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to complete task ${taskId}:`, error);
     }
   }

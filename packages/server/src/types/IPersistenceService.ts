@@ -1,4 +1,4 @@
-import { IPersistedPlayer } from './IPersistedPlayer';
+import { IServerPlayer } from './IServerPlayer';
 import { IPersistedTask } from './IPersistedTask';
 
 /**
@@ -16,7 +16,7 @@ export interface IPersistenceService {
   createOrGetPlayer(
     playerId: string,
     socketId?: string
-  ): Promise<IPersistedPlayer>;
+  ): Promise<IServerPlayer>;
 
   /**
    * Updates a player's activity timestamp and socket connection.
