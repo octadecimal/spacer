@@ -1,5 +1,6 @@
 import { ITask } from './ITask';
 import { IPlayerState } from './IPlayerState';
+import { IInventory } from './IInventory';
 
 /**
  * Socket.IO events interface.
@@ -28,10 +29,10 @@ export interface ISocketEvents {
 
   // Server to client events
   /**
-   * Server confirms player has joined with player ID.
+   * Server confirms player has joined with player ID and inventory.
    * @description Emitted after successful player registration.
    */
-  joined: (data: { playerId: string }) => void;
+  joined: (data: { playerId: string; inventory: IInventory }) => void;
 
   /**
    * Server notifies that a task has started.
@@ -70,4 +71,10 @@ export interface ISocketEvents {
    * @description Emitted when an error occurs during processing.
    */
   error: (data: { message: string }) => void;
+
+  /**
+   * Server notifies that player inventory has been updated.
+   * @description Emitted when items are added/removed from inventory.
+   */
+  inventoryUpdated: (data: { inventory: IInventory }) => void;
 }

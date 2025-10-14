@@ -1,4 +1,4 @@
-import { ITask } from '@spacer/shared';
+import { ITask, IInventory } from '@spacer/shared';
 
 /**
  * Game state interface.
@@ -28,4 +28,10 @@ export interface IGameState {
    * @description true if WebSocket connection is active.
    */
   isConnected: boolean;
+
+  /**
+   * Player's inventory.
+   * @description Contains all items the player has collected.
+   */
+  inventory: IInventory;
 }

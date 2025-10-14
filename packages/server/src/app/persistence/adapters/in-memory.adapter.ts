@@ -27,11 +27,17 @@ export class InMemoryPersistenceAdapter implements IPersistenceAdapter {
     socketId?: string
   ): Promise<IServerPlayer> {
     const now = Date.now();
+
     const player: IServerPlayer = {
       id: playerId,
       socketId,
       totalTasksCompleted: 0,
       totalMiningTime: 0,
+      inventory: {
+        items: {},
+        maxSlots: 50,
+        totalItems: 0,
+      },
       lastActiveAt: now,
       createdAt: now,
     };

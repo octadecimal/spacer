@@ -1,4 +1,4 @@
-import { IPlayer } from '@spacer/shared';
+import { IPlayer, IInventory } from '@spacer/shared';
 
 /**
  * Server player interface.
@@ -17,6 +17,12 @@ export interface IServerPlayer extends IPlayer {
    * @description Cumulative duration in milliseconds across all completed tasks.
    */
   totalMiningTime: number;
+
+  /**
+   * Player's inventory.
+   * @description Contains all items the player has collected.
+   */
+  inventory: IInventory;
 
   /**
    * Timestamp of last activity.

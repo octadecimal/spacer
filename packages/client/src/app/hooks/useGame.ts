@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
 import { IGameState } from '../../types/index';
-import { ITask, ISocketEvents, getTaskConfig } from '@spacer/shared';
+import {
+  ITask,
+  ISocketEvents,
+  getTaskConfig,
+  IInventory,
+} from '@spacer/shared';
 import { ILogEntry } from '../../components/DevelopmentLog';
 
 /**
@@ -15,6 +20,11 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
     currentTask: null,
     taskProgress: 0,
     isConnected: false,
+    inventory: {
+      items: {},
+      maxSlots: 50,
+      totalItems: 0,
+    },
   });
 
   // Development log entries for debugging and monitoring.
@@ -52,13 +62,17 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
   useEffect(() => {
     if (!socket) return;
 
-    // Server confirms player joined with unique ID.
-    const handleJoined = (data: { playerId: string }) => {
+    // Server confirms player joined with unique ID and inventory.
+    const handleJoined = (data: {
+      playerId: string;
+      inventory: IInventory;
+    }) => {
       console.log('Joined game with player ID:', data.playerId);
       addLog('info', `Joined game with player ID: ${data.playerId}`, data);
       setGameState((prev: IGameState) => ({
         ...prev,
         playerId: data.playerId,
+        inventory: data.inventory,
       }));
     };
 
@@ -129,12 +143,23 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
       alert(`Error: ${data.message}`);
     };
 
+    // Handle inventory updates from server.
+    const handleInventoryUpdated = (data: { inventory: IInventory }) => {
+      console.log('Inventory updated:', data.inventory);
+      addLog('info', 'Inventory updated', data.inventory);
+      setGameState((prev: IGameState) => ({
+        ...prev,
+        inventory: data.inventory,
+      }));
+    };
+
     // Register event listeners.
     socket.on('joined', handleJoined);
     socket.on('taskStarted', handleTaskStarted);
     socket.on('taskLoopCompleted', handleTaskLoopCompleted);
     socket.on('taskCompleted', handleTaskCompleted);
     socket.on('error', handleError);
+    socket.on('inventoryUpdated', handleInventoryUpdated);
 
     // Auto-join game on socket connection.
     addLog('info', 'Socket connected, joining game...');
@@ -148,6 +173,7 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
       socket.off('taskLoopCompleted', handleTaskLoopCompleted);
       socket.off('taskCompleted', handleTaskCompleted);
       socket.off('error', handleError);
+      socket.off('inventoryUpdated', handleInventoryUpdated);
     };
   }, [socket]);
 

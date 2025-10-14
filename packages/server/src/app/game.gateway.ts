@@ -10,7 +10,13 @@ import { Injectable } from '@nestjs/common';
 import { GamePersistenceService } from './persistence/persistence.service';
 import { IPersistedTask } from '../types/IPersistedTask';
 import { IServerPlayer } from '../types/IServerPlayer';
-import { ITask, getTaskConfig } from '@spacer/shared';
+import {
+  ITask,
+  ITaskConfig,
+  getTaskConfig,
+  getItemConfig,
+  IInventoryItem,
+} from '@spacer/shared';
 
 /**
  * WebSocket Gateway - Server-side game logic hub.
@@ -88,6 +94,57 @@ export class GameGateway {
   }
 
   /**
+   * Adds items to a player's inventory.
+   * @param player The player to add items to.
+   * @param itemId The item ID to add.
+   * @param quantity The quantity to add.
+   * @param client Optional socket client to notify of inventory update.
+   * @returns Whether the operation was successful.
+   */
+  private addItemToInventory(
+    player: IServerPlayer,
+    itemId: string,
+    quantity: number,
+    client?: Socket
+  ): boolean {
+    const itemConfig = getItemConfig(itemId);
+    if (!itemConfig) {
+      console.error(`Item config not found for item: ${itemId}`);
+      return false;
+    }
+
+    const existingItem = player.inventory.items[itemId];
+    const now = Date.now();
+
+    if (existingItem) {
+      // Item already exists, add to quantity
+      existingItem.quantity += quantity;
+    } else {
+      // New item, create inventory entry
+      const newItem: IInventoryItem = {
+        itemId,
+        quantity,
+        acquiredAt: now,
+      };
+      player.inventory.items[itemId] = newItem;
+    }
+
+    // Update total items count
+    player.inventory.totalItems += quantity;
+
+    console.log(
+      `Added ${quantity} ${itemConfig.name} to player ${player.id}'s inventory`
+    );
+
+    // Notify client of inventory update if socket is provided
+    if (client) {
+      client.emit('inventoryUpdated', { inventory: player.inventory });
+    }
+
+    return true;
+  }
+
+  /**
    * Player Connection Handler.
    * Triggered when client emits 'join' event.
    *
@@ -125,6 +182,11 @@ export class GameGateway {
         socketId: client.id,
         totalTasksCompleted: 0,
         totalMiningTime: 0,
+        inventory: {
+          items: {},
+          maxSlots: 50,
+          totalItems: 0,
+        },
         createdAt: Date.now(),
         lastActiveAt: Date.now(),
         tasks: activeTasks,
@@ -133,8 +195,11 @@ export class GameGateway {
       // Store active player in memory for fast real-time access.
       this.activePlayers.set(playerId, activePlayer);
 
-      // Confirm connection to client.
-      client.emit('joined', { playerId });
+      // Confirm connection to client with inventory data.
+      client.emit('joined', {
+        playerId,
+        inventory: activePlayer.inventory,
+      });
 
       console.log(
         `Player ${playerId} joined with socket ${client.id} (${activeTasks.length} tasks loaded)`
@@ -218,7 +283,7 @@ export class GameGateway {
     client.emit('taskStarted', { task });
 
     // Schedule continuous task loops for the specified duration.
-    this.scheduleTaskLoops(client, player, task, taskConfig.totalDuration);
+    this.scheduleTaskLoops(client, player, task, taskConfig);
 
     console.log(
       `Task ${task.name} started for player ${player.id} (${taskConfig.totalDuration}ms duration)`
@@ -231,13 +296,13 @@ export class GameGateway {
    * @param client The client socket.
    * @param player The player object.
    * @param task The task to loop.
-   * @param totalDuration Total duration for the looping in milliseconds.
+   * @param taskConfig The task configuration containing duration and rewards.
    */
   private scheduleTaskLoops(
     client: Socket,
     player: IServerPlayer & { tasks: ITask[] },
     task: ITask,
-    totalDuration: number
+    taskConfig: ITaskConfig
   ): void {
     const startTime = Date.now();
     let loopCount = 0;
@@ -246,7 +311,7 @@ export class GameGateway {
       const elapsed = Date.now() - startTime;
 
       // Check if we've exceeded the total duration.
-      if (elapsed >= totalDuration) {
+      if (elapsed >= taskConfig.totalDuration) {
         // Final completion - mark task as completed.
         task.completed = true;
 
@@ -259,11 +324,11 @@ export class GameGateway {
         client.emit('taskCompleted', {
           task: { ...task, completed: true },
           loopCount,
-          totalDuration,
+          totalDuration: taskConfig.totalDuration,
         });
 
         console.log(
-          `Task ${task.name} completed ${loopCount} loops for player ${player.id} (${totalDuration}ms total)`
+          `Task ${task.name} completed ${loopCount} loops for player ${player.id} (${taskConfig.totalDuration}ms total)`
         );
         return;
       }
@@ -271,13 +336,22 @@ export class GameGateway {
       // Complete current loop.
       loopCount++;
 
+      // Give rewards for this completed loop.
+      if (taskConfig.rewardsPerLoop) {
+        for (const [itemId, quantityPerLoop] of Object.entries(
+          taskConfig.rewardsPerLoop
+        )) {
+          this.addItemToInventory(player, itemId, quantityPerLoop, client);
+        }
+      }
+
       // Calculate remaining time.
-      const remainingTime = totalDuration - elapsed;
+      const remainingTime = taskConfig.totalDuration - elapsed;
 
       // Debug logging
       console.log(`Loop ${loopCount} completed:`, {
         elapsed,
-        totalDuration,
+        totalDuration: taskConfig.totalDuration,
         remainingTime,
         taskName: task.name,
         playerId: player.id,

@@ -34,6 +34,12 @@ export interface ITaskConfig {
   description?: string;
 
   /**
+   * Rewards given per loop completion.
+   * @description Items and quantities awarded for each completed loop.
+   */
+  rewardsPerLoop?: Record<string, number>;
+
+  /**
    * Whether this task is currently enabled.
    * @description Allows disabling tasks without removing them.
    */
@@ -51,6 +57,9 @@ export const TASK_CONFIGS: Record<string, ITaskConfig> = {
     loopDuration: 2000, // 2 seconds per loop
     totalDuration: 10000, // 10 seconds total
     description: 'Extract valuable ore from asteroids',
+    rewardsPerLoop: {
+      iron: 1, // 1 iron ore per loop
+    },
     enabled: true,
   },
   // Future tasks can be added here:
