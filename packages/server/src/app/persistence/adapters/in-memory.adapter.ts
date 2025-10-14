@@ -141,10 +141,11 @@ export class InMemoryPersistenceAdapter implements IPersistenceAdapter {
   async isHealthy(): Promise<boolean> {
     // Simple health check - verify maps are accessible
     try {
-      this.players.size;
-      this.tasks.size;
-      this.playerTasks.size;
-      return true;
+      return (
+        this.players.size >= 0 &&
+        this.tasks.size >= 0 &&
+        this.playerTasks.size >= 0
+      );
     } catch {
       return false;
     }
