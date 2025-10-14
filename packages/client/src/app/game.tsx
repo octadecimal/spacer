@@ -1,14 +1,9 @@
 import { useSocket } from './hooks/useSocket';
 import { useGame } from './hooks/useGame';
-import {
-  layout,
-  typography,
-  progress,
-  status,
-  spacing,
-  getStatusColor,
-  getButtonClasses,
-} from './styles';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { layout, typography, status, spacing, getStatusColor } from './styles';
 
 export function Game() {
   const { socket, isConnected } = useSocket();
@@ -25,51 +20,50 @@ export function Game() {
       <div className={layout.container}>
         <h1 className={typography.h1}>Space Mining Game</h1>
 
-        <div className={`${layout.card} ${layout.cardSpaced}`}>
-          <div className={status.statusContainer}>
-            <p className={status.statusLabel}>Connection Status:</p>
-            <p
-              className={`${status.statusValue} ${getStatusColor(isConnected)}`}
-            >
-              {isConnected ? 'Connected' : 'Disconnected'}
-            </p>
-            {gameState.playerId && (
-              <p className={status.playerInfo}>
-                Player ID: {gameState.playerId}
+        <Card className={layout.cardSpaced}>
+          <CardHeader>
+            <div className={status.statusContainer}>
+              <p className={status.statusLabel}>Connection Status:</p>
+              <p
+                className={`${status.statusValue} ${getStatusColor(
+                  isConnected
+                )}`}
+              >
+                {isConnected ? 'Connected' : 'Disconnected'}
               </p>
-            )}
-          </div>
+              {gameState.playerId && (
+                <p className={status.playerInfo}>
+                  Player ID: {gameState.playerId}
+                </p>
+              )}
+            </div>
+          </CardHeader>
 
-          <div className={spacing.section}>
-            <button
+          <CardContent className={spacing.section}>
+            <Button
               onClick={handleStartMining}
               disabled={isButtonDisabled}
-              className={getButtonClasses(isButtonDisabled)}
+              className="w-full"
             >
               {gameState.currentTask
                 ? 'Mining in Progress...'
                 : 'Mine Asteroid'}
-            </button>
+            </Button>
 
             {gameState.currentTask && (
               <div className={spacing.progress}>
-                <div className={progress.info}>
+                <div className="flex justify-between text-sm">
                   <span>Mining Progress</span>
                   <span>{Math.round(gameState.taskProgress)}%</span>
                 </div>
-                <div className={progress.container}>
-                  <div
-                    className={progress.fill}
-                    style={{ width: `${gameState.taskProgress}%` }}
-                  ></div>
-                </div>
-                <p className={progress.remaining}>
+                <Progress value={gameState.taskProgress} className="w-full" />
+                <p className="text-xs text-muted-foreground text-center">
                   {getRemainingTime()}s remaining
                 </p>
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

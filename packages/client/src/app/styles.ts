@@ -1,14 +1,16 @@
-// Design System - Reusable Tailwind Classes
+import { cn } from '@/lib/utils';
+
+// Design System - Reusable Tailwind Classes with shadcn/ui integration
 // Organized by component type and purpose
 
 export const layout = {
   // Page layouts
-  page: 'min-h-screen bg-gray-900 text-white',
+  page: 'min-h-screen bg-background text-foreground',
   container: 'max-w-md mx-auto',
   section: 'p-8',
 
-  // Card layouts
-  card: 'bg-gray-800 rounded-lg p-6',
+  // Card layouts (using shadcn/ui Card component)
+  card: 'bg-card text-card-foreground rounded-lg border',
   cardSpaced: 'space-y-4',
 } as const;
 
@@ -17,53 +19,44 @@ export const typography = {
   h1: 'text-3xl font-bold text-center mb-8',
 
   // Body text
-  label: 'text-sm text-gray-400',
-  caption: 'text-xs text-gray-500',
-  muted: 'text-xs text-gray-400',
+  label: 'text-sm text-muted-foreground',
+  caption: 'text-xs text-muted-foreground',
+  muted: 'text-xs text-muted-foreground',
 
   // Status text
   status: 'font-semibold',
   success: 'text-green-400',
-  error: 'text-red-400',
+  error: 'text-destructive',
 } as const;
 
 export const buttons = {
-  // Base button styles
-  base: 'w-full py-3 px-4 rounded-lg font-semibold transition-colors',
-
-  // Button states
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-  disabled: 'bg-gray-600 text-gray-400 cursor-not-allowed',
+  // Base button styles (using shadcn/ui Button component)
+  base: 'w-full',
 
   // Button variants
-  primaryButton:
-    'w-full py-3 px-4 rounded-lg font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white',
-  disabledButton:
-    'w-full py-3 px-4 rounded-lg font-semibold transition-colors bg-gray-600 text-gray-400 cursor-not-allowed',
+  primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  disabled: 'bg-muted text-muted-foreground cursor-not-allowed',
 } as const;
 
 export const progress = {
-  // Progress bar container
-  container: 'w-full bg-gray-700 rounded-full h-2',
-
-  // Progress bar fill
-  fill: 'bg-blue-600 h-2 rounded-full transition-all duration-100',
+  // Progress bar container (using shadcn/ui Progress component)
+  container: 'w-full',
 
   // Progress info
   info: 'flex justify-between text-sm',
-  remaining: 'text-xs text-gray-400 text-center',
+  remaining: 'text-xs text-muted-foreground text-center',
 } as const;
 
 export const status = {
   // Status indicators
   connected: 'text-green-400',
-  disconnected: 'text-red-400',
+  disconnected: 'text-destructive',
 
   // Status containers
   statusContainer: 'text-center',
-  statusLabel: 'text-sm text-gray-400',
+  statusLabel: 'text-sm text-muted-foreground',
   statusValue: 'font-semibold',
-  playerInfo: 'text-xs text-gray-500 mt-1',
+  playerInfo: 'text-xs text-muted-foreground mt-1',
 } as const;
 
 export const spacing = {
@@ -73,12 +66,8 @@ export const spacing = {
   status: 'text-center',
 } as const;
 
-// Utility function to combine classes conditionally
-export const cn = (
-  ...classes: (string | undefined | null | false)[]
-): string => {
-  return classes.filter(Boolean).join(' ');
-};
+// Utility function to combine classes conditionally (using shadcn/ui cn utility)
+export { cn };
 
 // Status-specific utility functions
 export const getStatusColor = (isConnected: boolean): string => {
@@ -86,5 +75,5 @@ export const getStatusColor = (isConnected: boolean): string => {
 };
 
 export const getButtonClasses = (isDisabled: boolean): string => {
-  return isDisabled ? buttons.disabledButton : buttons.primaryButton;
+  return cn(buttons.base, isDisabled ? buttons.disabled : buttons.primary);
 };
