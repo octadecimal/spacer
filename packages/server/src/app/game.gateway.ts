@@ -7,33 +7,18 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
+import { GamePersistenceService } from './persistence/persistence.service';
+import { IPersistedTask } from '../types/IPersistedTask';
+import { ITask, IPlayer } from '../types';
 
 /**
- * Core game data structures
- * These interfaces define the shape of our game state
- */
-interface Task {
-  id: string; // Unique task identifier
-  name: string; // Human-readable task name (e.g., "Mine Asteroid")
-  duration: number; // Task duration in milliseconds
-  startTime?: number; // Unix timestamp when task started
-  completed: boolean; // Task completion status
-}
-
-interface Player {
-  id: string; // Unique player identifier
-  socketId: string; // Socket.IO connection ID (maps to client)
-  tasks: Task[]; // Array of all tasks (completed + active)
-}
-
-/**
- * WebSocket Gateway - Server-side game logic hub
- * Handles all real-time communication between clients and server
+ * WebSocket Gateway - Server-side game logic hub.
+ * Handles all real-time communication between clients and server.
  *
  * Architecture:
- * - Server-authoritative: All game state changes happen here
- * - Event-driven: Uses Socket.IO events for client-server communication
- * - Stateful: Maintains player state in memory (Map-based storage)
+ * - Server-authoritative: All game state changes happen here.
+ * - Event-driven: Uses Socket.IO events for client-server communication.
+ * - Hybrid persistence: Memory for real-time + persistence for durability.
  */
 @Injectable()
 @WebSocketGateway({
@@ -43,78 +28,153 @@ interface Player {
   },
 })
 export class GameGateway {
+  /**
+   * Socket.IO server instance for handling WebSocket connections.
+   */
   @WebSocketServer()
-  server!: Server; // Socket.IO server instance
+  public server!: Server;
 
-  // In-memory player storage (Map for O(1) lookups by player ID)
-  // In production, consider Redis or database for persistence
-  private players: Map<string, Player> = new Map();
+  // In-memory player storage for real-time operations (Map for O(1) lookups).
+  // This provides fast access for active gameplay while persistence handles durability.
+  private activePlayers: Map<string, IPlayer> = new Map();
 
   /**
-   * Player Connection Handler
-   * Triggered when client emits 'join' event
-   *
-   * Flow:
-   * 1. Generate unique player ID (timestamp-based)
-   * 2. Create player object with empty task list
-   * 3. Store player in memory (Map)
-   * 4. Send confirmation back to client
+   * Constructor.
+   * @param persistenceService The persistence service.
    */
-  @SubscribeMessage('join')
-  handleJoin(@ConnectedSocket() client: Socket) {
-    // Generate unique player ID using timestamp
-    const playerId = `player_${Date.now()}`;
+  public constructor(
+    private readonly persistenceService: GamePersistenceService
+  ) {}
 
-    // Create new player instance
-    const player: Player = {
-      id: playerId,
-      socketId: client.id, // Maps to Socket.IO connection
-      tasks: [], // Start with empty task list
+  /**
+   * Convert persisted task to active game task.
+   * Maps between persistence layer and real-time game state.
+   * @param persistedTask The persisted task.
+   * @returns The active game task.
+   */
+  private convertPersistedTaskToTask(persistedTask: IPersistedTask): ITask {
+    return {
+      id: persistedTask.id,
+      name: persistedTask.name,
+      duration: persistedTask.duration,
+      startTime: persistedTask.startTime,
+      completed: persistedTask.completed,
     };
-
-    // Store player in memory for future lookups
-    this.players.set(playerId, player);
-
-    // Confirm connection to client
-    client.emit('joined', { playerId });
-
-    console.log(`Player ${playerId} joined with socket ${client.id}`);
   }
 
   /**
-   * Task Start Handler - Core game logic
-   * Triggered when client emits 'startTask' event
+   * Convert active game task to persisted task.
+   * Maps between real-time game state and persistence layer.
+   * @param task The active game task.
+   * @param playerId The player ID.
+   * @returns The persisted task.
+   */
+  private convertTaskToPersistedTask(
+    task: ITask,
+    playerId: string
+  ): IPersistedTask {
+    return {
+      id: task.id,
+      playerId,
+      name: task.name,
+      duration: task.duration,
+      startTime: task.startTime,
+      completed: task.completed,
+      completedAt: task.completed ? Date.now() : undefined,
+      createdAt: Date.now(),
+    };
+  }
+
+  /**
+   * Player Connection Handler.
+   * Triggered when client emits 'join' event.
+   *
+   * Hybrid Persistence Flow:
+   * 1. Generate unique player ID (timestamp-based).
+   * 2. Create/get player from persistence layer.
+   * 3. Load player's task history from persistence.
+   * 4. Store active player in memory for real-time operations.
+   * 5. Send confirmation back to client.
+   * @param client The client.
+   * @returns The player ID.
+   */
+  @SubscribeMessage('join')
+  public async handleJoin(@ConnectedSocket() client: Socket) {
+    try {
+      // Generate unique player ID using timestamp.
+      const playerId = `player_${Date.now()}`;
+
+      // Create or get player from persistence layer.
+      await this.persistenceService.createOrGetPlayer(playerId, client.id);
+
+      // Load player's task history from persistence.
+      const persistedTasks = await this.persistenceService.getPlayerTaskHistory(
+        playerId
+      );
+
+      // Convert persisted tasks to active game tasks.
+      const activeTasks: ITask[] = persistedTasks.map(
+        this.convertPersistedTaskToTask
+      );
+
+      // Create active player instance for real-time operations.
+      const activePlayer: IPlayer = {
+        id: playerId,
+        socketId: client.id,
+        tasks: activeTasks,
+      };
+
+      // Store active player in memory for fast real-time access.
+      this.activePlayers.set(playerId, activePlayer);
+
+      // Confirm connection to client.
+      client.emit('joined', { playerId });
+
+      console.log(
+        `Player ${playerId} joined with socket ${client.id} (${activeTasks.length} tasks loaded)`
+      );
+    } catch (error) {
+      console.error('Failed to handle player join:', error);
+      client.emit('error', { message: 'Failed to join game' });
+    }
+  }
+
+  /**
+   * Task Start Handler - Core game logic.
+   * Triggered when client emits 'startTask' event.
    *
    * Server-authoritative validation:
-   * - Prevents multiple active tasks per player
-   * - Validates player exists
-   * - Manages task lifecycle with setTimeout
+   * - Prevents multiple active tasks per player.
+   * - Validates player exists.
+   * - Manages task lifecycle with setTimeout.
    *
    * Flow:
-   * 1. Find player by socket ID
-   * 2. Validate player exists
-   * 3. Check for existing active tasks (prevent spam)
-   * 4. Create new task with server timestamp
-   * 5. Schedule task completion with setTimeout
-   * 6. Notify client of task start
+   * 1. Find player by socket ID.
+   * 2. Validate player exists.
+   * 3. Check for existing active tasks (prevent spam).
+   * 4. Create new task with server timestamp.
+   * 5. Schedule task completion with setTimeout.
+   * 6. Notify client of task start.
+   * @param data The data.
+   * @param client The client.
    */
   @SubscribeMessage('startTask')
-  handleStartTask(
+  public handleStartTask(
     @MessageBody() data: { taskName: string },
     @ConnectedSocket() client: Socket
   ) {
-    // Find player by socket ID (O(n) lookup - could be optimized with reverse mapping)
-    const player = Array.from(this.players.values()).find(
+    // Find player by socket ID. (O(n) lookup - could be optimized with reverse mapping).
+    const player = Array.from(this.activePlayers.values()).find(
       (p) => p.socketId === client.id
     );
 
-    // Validate player exists
+    // Validate player exists.
     if (!player) {
       client.emit('error', { message: 'Player not found' });
       return;
     }
 
-    // Server-authoritative: Prevent multiple active tasks
+    // Server-authoritative: Prevent multiple active tasks.
     const activeTask = player.tasks.find(
       (task) => !task.completed && task.startTime
     );
@@ -123,8 +183,8 @@ export class GameGateway {
       return;
     }
 
-    // Create new task with server-controlled timing
-    const task: Task = {
+    // Create new task with server-controlled timing.
+    const task: ITask = {
       id: `task_${Date.now()}`, // Unique task ID
       name: data.taskName, // Task name from client
       duration: 10000, // Fixed duration (10 seconds)
@@ -132,15 +192,26 @@ export class GameGateway {
       completed: false, // Initial state
     };
 
-    // Add task to player's task list
+    // Add task to player's task list (real-time).
     player.tasks.push(task);
 
-    // Immediately notify client that task started
+    // Persist task to database (durability).
+    const persistedTask = this.convertTaskToPersistedTask(task, player.id);
+    this.persistenceService.saveTask(persistedTask).catch((error) => {
+      console.error(`Failed to persist task ${task.id}:`, error);
+    });
+
+    // Immediately notify client that task started.
     client.emit('taskStarted', { task });
 
-    // Schedule task completion (server-authoritative timing)
-    setTimeout(() => {
+    // Schedule task completion (server-authoritative timing).
+    setTimeout(async () => {
       task.completed = true;
+
+      // Persist task completion.
+      await this.persistenceService.completeTask(task.id);
+
+      // Notify client.
       client.emit('taskCompleted', { task });
       console.log(`Task ${task.name} completed for player ${player.id}`);
     }, task.duration);
@@ -149,33 +220,35 @@ export class GameGateway {
   }
 
   /**
-   * Player State Query Handler
-   * Triggered when client emits 'getPlayerState' event
+   * Player State Query Handler.
+   * Triggered when client emits 'getPlayerState' event.
    *
    * Purpose:
-   * - Allows clients to sync their state with server
-   * - Useful for reconnection scenarios
-   * - Provides complete player data (all tasks)
+   * - Allows clients to sync their state with server.
+   * - Useful for reconnection scenarios.
+   * - Provides complete player data (all tasks).
    *
    * Flow:
-   * 1. Find player by socket ID
-   * 2. Validate player exists
-   * 3. Send complete player state to client
+   * 1. Find player by socket ID.
+   * 2. Validate player exists.
+   * 3. Send complete player state to client.
+   * @param client The client.
+   * @returns The player state.
    */
   @SubscribeMessage('getPlayerState')
-  handleGetPlayerState(@ConnectedSocket() client: Socket) {
-    // Find player by socket ID
-    const player = Array.from(this.players.values()).find(
+  public handleGetPlayerState(@ConnectedSocket() client: Socket) {
+    // Find player by socket ID.
+    const player = Array.from(this.activePlayers.values()).find(
       (p) => p.socketId === client.id
     );
 
-    // Validate player exists
+    // Validate player exists.
     if (!player) {
       client.emit('error', { message: 'Player not found' });
       return;
     }
 
-    // Send complete player state to client
+    // Send complete player state to client.
     client.emit('playerState', {
       playerId: player.id,
       tasks: player.tasks, // All tasks (completed + active)

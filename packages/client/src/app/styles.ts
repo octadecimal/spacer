@@ -3,6 +3,9 @@ import { cn } from '@/lib/utils';
 // Design System - Reusable Tailwind Classes with shadcn/ui integration
 // Organized by component type and purpose
 
+/**
+ * Layout styles for page structure and containers.
+ */
 export const layout = {
   // Page layouts
   page: 'min-h-screen bg-background text-foreground',
@@ -14,6 +17,9 @@ export const layout = {
   cardSpaced: 'space-y-4',
 } as const;
 
+/**
+ * Typography styles for text elements and headings.
+ */
 export const typography = {
   // Headings
   h1: 'text-3xl font-bold text-center mb-8',
@@ -29,6 +35,9 @@ export const typography = {
   error: 'text-destructive',
 } as const;
 
+/**
+ * Button styles and variants for interactive elements.
+ */
 export const buttons = {
   // Base button styles (using shadcn/ui Button component)
   base: 'w-full',
@@ -38,6 +47,9 @@ export const buttons = {
   disabled: 'bg-muted text-muted-foreground cursor-not-allowed',
 } as const;
 
+/**
+ * Progress bar styles for task progress display.
+ */
 export const progress = {
   // Progress bar container (using shadcn/ui Progress component)
   container: 'w-full',
@@ -47,6 +59,9 @@ export const progress = {
   remaining: 'text-xs text-muted-foreground text-center',
 } as const;
 
+/**
+ * Status indicator styles for connection and player states.
+ */
 export const status = {
   // Status indicators
   connected: 'text-green-400',
@@ -59,6 +74,9 @@ export const status = {
   playerInfo: 'text-xs text-muted-foreground mt-1',
 } as const;
 
+/**
+ * Spacing utilities for consistent layout patterns.
+ */
 export const spacing = {
   // Common spacing patterns
   section: 'space-y-4',
@@ -70,10 +88,20 @@ export const spacing = {
 export { cn };
 
 // Status-specific utility functions
+/**
+ * Gets the appropriate color class based on connection status.
+ * @param isConnected - Whether the client is connected to the server.
+ * @returns CSS class name for the connection status color.
+ */
 export const getStatusColor = (isConnected: boolean): string => {
   return isConnected ? status.connected : status.disconnected;
 };
 
+/**
+ * Gets the appropriate button classes based on disabled state.
+ * @param isDisabled - Whether the button should be disabled.
+ * @returns Combined CSS class names for the button.
+ */
 export const getButtonClasses = (isDisabled: boolean): string => {
   return cn(buttons.base, isDisabled ? buttons.disabled : buttons.primary);
 };

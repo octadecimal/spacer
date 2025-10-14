@@ -6,7 +6,9 @@ autoInstallPeers: true
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@parcel/watcher'
+  - bufferutil
   - esbuild
   - unrs-resolver
+  - utf-8-validate
 
 strictPeerDependencies: false
