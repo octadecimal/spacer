@@ -16,6 +16,11 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@spacer/source"]
+    "customConditions": ["@spacer/source"],
+    "baseUrl": ".",
+    "paths": {
+      "@spacer/shared": ["packages/shared/src"],
+      "@spacer/shared/*": ["packages/shared/src/*"]
+    }
   }
 }

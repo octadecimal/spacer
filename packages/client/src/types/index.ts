@@ -1,6 +1,3 @@
-// Server types
-export * from './ITask';
-export * from './IPlayer';
+// Client-specific types
 export * from './IGameState';
-export * from './ISocketEvents';
-export * from './IPlayerState';
+export * from './IPlayer';

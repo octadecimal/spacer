@@ -2,7 +2,8 @@ import { ITask } from './ITask';
 
 /**
  * Player state interface.
- * Represents player data sent from server.
+ * Represents player data sent from server to client.
+ * Shared between client and server for consistent communication.
  */
 export interface IPlayerState {
   /**

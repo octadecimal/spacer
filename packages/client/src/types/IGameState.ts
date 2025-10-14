@@ -1,4 +1,4 @@
-import { ITask } from './ITask';
+import { ITask } from '@spacer/shared';
 
 /**
  * Game state interface.

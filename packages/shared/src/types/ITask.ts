@@ -1,6 +1,7 @@
 /**
- * Game task interface.
+ * Core game task interface.
  * Represents a task in the active game state.
+ * Shared between client and server for consistent data structures.
  */
 export interface ITask {
   /**

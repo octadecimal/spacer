@@ -1,6 +1,4 @@
-// Server types
-export * from './ITask';
-export * from './IPlayer';
+// Server-specific types
 export * from './IPersistenceAdapter';
 export * from './IPersistenceService';
 export * from './IPersistedPlayer';

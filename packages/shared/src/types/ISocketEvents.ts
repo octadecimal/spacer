@@ -4,6 +4,7 @@ import { IPlayerState } from './IPlayerState';
 /**
  * Socket.IO events interface.
  * Defines the contract for client-server communication.
+ * Shared between client and server to ensure type safety.
  */
 export interface ISocketEvents {
   // Client to server events
