@@ -136,6 +136,14 @@ export class GameGateway {
       `Added ${quantity} ${itemConfig.name} to player ${player.id}'s inventory`
     );
 
+    // Persist inventory changes to storage
+    this.persistenceService.updatePlayer(player).catch((error) => {
+      console.error(
+        `Failed to persist inventory update for player ${player.id}:`,
+        error
+      );
+    });
+
     // Notify client of inventory update if socket is provided
     if (client) {
       client.emit('inventoryUpdated', { inventory: player.inventory });
@@ -158,13 +166,19 @@ export class GameGateway {
    * @returns The player ID.
    */
   @SubscribeMessage('join')
-  public async handleJoin(@ConnectedSocket() client: Socket) {
+  public async handleJoin(
+    @MessageBody() data: { username: string },
+    @ConnectedSocket() client: Socket
+  ) {
     try {
-      // Generate unique player ID using timestamp.
-      const playerId = `player_${Date.now()}`;
+      // Use username as player ID for persistence.
+      const playerId = data.username;
 
       // Create or get player from persistence layer.
-      await this.persistenceService.createOrGetPlayer(playerId, client.id);
+      const persistedPlayer = await this.persistenceService.createOrGetPlayer(
+        playerId,
+        client.id
+      );
 
       // Load player's task history from persistence.
       const persistedTasks = await this.persistenceService.getPlayerTaskHistory(
@@ -176,19 +190,10 @@ export class GameGateway {
         this.convertPersistedTaskToTask
       );
 
-      // Create active player instance for real-time operations.
+      // Create active player instance using persisted data.
       const activePlayer: IServerPlayer & { tasks: ITask[] } = {
-        id: playerId,
+        ...persistedPlayer,
         socketId: client.id,
-        totalTasksCompleted: 0,
-        totalMiningTime: 0,
-        inventory: {
-          items: {},
-          maxSlots: 50,
-          totalItems: 0,
-        },
-        createdAt: Date.now(),
-        lastActiveAt: Date.now(),
         tasks: activeTasks,
       };
 

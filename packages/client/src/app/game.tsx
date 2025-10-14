@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useGame } from './hooks/useGame';
 import { Button } from '@/components/ui/button';
@@ -5,9 +6,20 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { DevelopmentLog } from '@/components/DevelopmentLog';
 import { Inventory } from '@/components/Inventory';
+import { Login } from '@/components/Login';
 import { layout, typography, status, spacing, getStatusColor } from './styles';
 
 export function Game() {
+  // Login state management
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    // Check localStorage on initial render
+    return !!localStorage.getItem('spacer_username');
+  });
+  const [username, setUsername] = useState<string>(() => {
+    // Load username from localStorage on initial render
+    return localStorage.getItem('spacer_username') || '';
+  });
+
   const { socket, isConnected } = useSocket();
   const {
     gameState,
@@ -16,7 +28,24 @@ export function Game() {
     remainingTime,
     overallProgress,
     startTask,
-  } = useGame(socket);
+  } = useGame(socket, isLoggedIn ? username : undefined);
+
+  /**
+   * Handles successful login.
+   * @param loggedInUsername The username that was logged in.
+   */
+  const handleLogin = (loggedInUsername: string) => {
+    setUsername(loggedInUsername);
+    setIsLoggedIn(true);
+  };
+
+  /**
+   * Handles logout.
+   */
+  const handleLogout = () => {
+    setUsername('');
+    setIsLoggedIn(false);
+  };
 
   const handleStartMining = () => {
     startTask('Mine Asteroid');
@@ -24,12 +53,43 @@ export function Game() {
 
   const isButtonDisabled = !isConnected || !!gameState.currentTask;
 
+  // Show login screen if not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <Login
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          currentUsername={username}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-background text-foreground p-4 overflow-hidden">
       <div className="max-w-7xl mx-auto h-full">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
           {/* Inventory Sidebar */}
-          <div className="lg:col-span-1 flex flex-col min-h-0">
+          <div className="lg:col-span-1 flex flex-col min-h-0 space-y-4">
+            {/* User Info Card */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Logged in as:
+                    </p>
+                    <p className="font-semibold">{username}</p>
+                  </div>
+                  <Button onClick={handleLogout} variant="outline" size="sm">
+                    Logout
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <Inventory
               inventory={gameState.inventory}
               className="flex-1 min-h-0"

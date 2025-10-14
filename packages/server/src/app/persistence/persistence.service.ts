@@ -26,7 +26,7 @@ export class GamePersistenceService implements IPersistenceService {
   public async createOrGetPlayer(
     playerId: string,
     socketId?: string
-  ): Promise<IPersistedPlayer> {
+  ): Promise<IServerPlayer> {
     try {
       // Try to get existing player.
       let player = await this.adapter.getPlayer(playerId);
@@ -67,6 +67,14 @@ export class GamePersistenceService implements IPersistenceService {
       }
     } catch (error) {
       console.error(`Failed to update player activity ${playerId}:`, error);
+    }
+  }
+
+  public async updatePlayer(player: IServerPlayer): Promise<void> {
+    try {
+      await this.adapter.updatePlayer(player);
+    } catch (error) {
+      console.error(`Failed to update player ${player.id}:`, error);
     }
   }
 

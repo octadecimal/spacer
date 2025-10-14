@@ -10,10 +10,10 @@ import { IInventory } from './IInventory';
 export interface ISocketEvents {
   // Client to server events
   /**
-   * Client requests to join the game.
-   * @description Emitted when client wants to connect to the game.
+   * Client requests to join the game with username.
+   * @description Emitted when client wants to connect to the game with a username.
    */
-  join: () => void;
+  join: (data: { username: string }) => void;
 
   /**
    * Client requests to start a new task.

@@ -26,6 +26,13 @@ export interface IPersistenceService {
    */
   updatePlayerActivity(playerId: string, socketId?: string): Promise<void>;
 
+  /**
+   * Updates a player's data (inventory, stats, etc.).
+   * @param player - The updated player object.
+   * @returns Promise that resolves when update is complete.
+   */
+  updatePlayer(player: IServerPlayer): Promise<void>;
+
   // Task management
   /**
    * Saves a task to the persistence layer.

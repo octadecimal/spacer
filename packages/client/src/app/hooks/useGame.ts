@@ -12,8 +12,13 @@ import { ILogEntry } from '../../components/DevelopmentLog';
 /**
  * Custom hook managing game state and Socket.IO communication.
  * Handles task lifecycle, progress tracking, and server synchronization.
+ * @param socket The socket connection.
+ * @param username The username for authentication.
  */
-export function useGame(socket: Socket<ISocketEvents> | null) {
+export function useGame(
+  socket: Socket<ISocketEvents> | null,
+  username?: string
+) {
   // Centralized game state - single source of truth.
   const [gameState, setGameState] = useState<IGameState>({
     playerId: null,
@@ -163,7 +168,9 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
 
     // Auto-join game on socket connection.
     addLog('info', 'Socket connected, joining game...');
-    socket.emit('join');
+    if (username) {
+      socket.emit('join', { username });
+    }
 
     // Cleanup: remove listeners to prevent memory leaks.
     return () => {
@@ -175,7 +182,7 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
       socket.off('error', handleError);
       socket.off('inventoryUpdated', handleInventoryUpdated);
     };
-  }, [socket]);
+  }, [socket, username]);
 
   // Real-time progress tracking for active tasks.
   useEffect(() => {
