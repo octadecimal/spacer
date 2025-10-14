@@ -8,7 +8,14 @@ import { layout, typography, status, spacing, getStatusColor } from './styles';
 
 export function Game() {
   const { socket, isConnected } = useSocket();
-  const { gameState, logs, startTask, getRemainingTime } = useGame(socket);
+  const {
+    gameState,
+    logs,
+    loopCount,
+    remainingTime,
+    overallProgress,
+    startTask,
+  } = useGame(socket);
 
   const handleStartMining = () => {
     startTask('Mine Asteroid');
@@ -68,9 +75,27 @@ export function Game() {
                           value={gameState.taskProgress}
                           className="w-full"
                         />
-                        <p className="text-xs text-muted-foreground text-center">
-                          {getRemainingTime()}s remaining
-                        </p>
+                        {/* Overall cycle progress bar */}
+                        <div className="mt-2">
+                          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                            <span>Overall Progress</span>
+                            <span>{Math.round(overallProgress)}%</span>
+                          </div>
+                          <Progress
+                            value={overallProgress}
+                            className="w-full h-1"
+                          />
+                        </div>
+                        {/* Debug info */}
+                        <div className="text-xs text-red-500 text-center">
+                          Debug: {gameState.taskProgress.toFixed(2)}% | Loop:{' '}
+                          {loopCount} | Remaining:{' '}
+                          {Math.round(remainingTime / 1000)}s
+                        </div>
+                        <div className="text-xs text-muted-foreground text-center space-y-1">
+                          <p>Loop {loopCount} completed</p>
+                          <p>{Math.round(remainingTime / 1000)}s remaining</p>
+                        </div>
                       </div>
                     )}
                   </CardContent>

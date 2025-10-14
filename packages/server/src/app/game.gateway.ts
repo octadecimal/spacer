@@ -152,21 +152,21 @@ export class GameGateway {
    * Server-authoritative validation:
    * - Prevents multiple active tasks per player.
    * - Validates player exists.
-   * - Manages task lifecycle with setTimeout.
+   * - Manages task lifecycle with continuous loops.
    *
    * Flow:
    * 1. Find player by socket ID.
    * 2. Validate player exists.
    * 3. Check for existing active tasks (prevent spam).
    * 4. Create new task with server timestamp.
-   * 5. Schedule task completion with setTimeout.
+   * 5. Schedule continuous task loops for specified duration.
    * 6. Notify client of task start.
    * @param data The data.
    * @param client The client.
    */
   @SubscribeMessage('startTask')
   public handleStartTask(
-    @MessageBody() data: { taskName: string },
+    @MessageBody() data: { taskName: string; duration?: number },
     @ConnectedSocket() client: Socket
   ) {
     // Find player by socket ID. (O(n) lookup - could be optimized with reverse mapping).
@@ -190,10 +190,12 @@ export class GameGateway {
     }
 
     // Create new task with server-controlled timing.
+    const taskDuration = data.duration || 2000; // Default 2 seconds per loop
+    const loopDuration = 10000; // 10 seconds total loop duration
     const task: ITask = {
       id: `task_${Date.now()}`, // Unique task ID
       name: data.taskName, // Task name from client
-      duration: 1500, // Fixed duration (1.5 seconds) - testing hot reload again
+      duration: taskDuration, // Duration per individual task loop
       startTime: Date.now(), // Server timestamp (prevents cheating)
       completed: false, // Initial state
     };
@@ -210,19 +212,88 @@ export class GameGateway {
     // Immediately notify client that task started.
     client.emit('taskStarted', { task });
 
-    // Schedule task completion (server-authoritative timing).
-    setTimeout(async () => {
-      task.completed = true;
+    // Schedule continuous task loops for the specified duration.
+    this.scheduleTaskLoops(client, player, task, loopDuration);
 
-      // Persist task completion.
-      await this.persistenceService.completeTask(task.id);
+    console.log(
+      `Task ${task.name} started for player ${player.id} (${loopDuration}ms duration)`
+    );
+  }
 
-      // Notify client.
-      client.emit('taskCompleted', { task });
-      console.log(`Task ${task.name} completed for player ${player.id}`);
-    }, task.duration);
+  /**
+   * Schedules continuous task loops for a specified duration.
+   * Creates multiple task completion cycles within the total duration.
+   * @param client The client socket.
+   * @param player The player object.
+   * @param task The task to loop.
+   * @param totalDuration Total duration for the looping in milliseconds.
+   */
+  private scheduleTaskLoops(
+    client: Socket,
+    player: IServerPlayer & { tasks: ITask[] },
+    task: ITask,
+    totalDuration: number
+  ): void {
+    const startTime = Date.now();
+    let loopCount = 0;
 
-    console.log(`Task ${task.name} started for player ${player.id}`);
+    const runLoop = () => {
+      const elapsed = Date.now() - startTime;
+
+      // Check if we've exceeded the total duration.
+      if (elapsed >= totalDuration) {
+        // Final completion - mark task as completed.
+        task.completed = true;
+
+        // Persist final task completion.
+        this.persistenceService.completeTask(task.id).catch((error) => {
+          console.error(`Failed to complete final task ${task.id}:`, error);
+        });
+
+        // Notify client of final completion.
+        client.emit('taskCompleted', {
+          task: { ...task, completed: true },
+          loopCount,
+          totalDuration,
+        });
+
+        console.log(
+          `Task ${task.name} completed ${loopCount} loops for player ${player.id} (${totalDuration}ms total)`
+        );
+        return;
+      }
+
+      // Complete current loop.
+      loopCount++;
+
+      // Calculate remaining time.
+      const remainingTime = totalDuration - elapsed;
+
+      // Debug logging
+      console.log(`Loop ${loopCount} completed:`, {
+        elapsed,
+        totalDuration,
+        remainingTime,
+        taskName: task.name,
+        playerId: player.id,
+      });
+
+      // Update task start time for next loop BEFORE notifying client.
+      task.startTime = Date.now();
+
+      // Notify client of loop completion.
+      client.emit('taskLoopCompleted', {
+        task: { ...task },
+        loopCount,
+        remainingTime,
+      });
+
+      // Schedule next loop.
+      setTimeout(runLoop, task.duration);
+    };
+
+    // Start the first loop.
+    setTimeout(runLoop, task.duration);
   }
 
   /**

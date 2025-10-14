@@ -20,6 +20,12 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
   // Development log entries for debugging and monitoring.
   const [logs, setLogs] = useState<ILogEntry[]>([]);
 
+  // Task looping state for continuous tasks.
+  const [loopCount, setLoopCount] = useState<number>(0);
+  const [remainingTime, setRemainingTime] = useState<number>(0);
+  const [overallProgress, setOverallProgress] = useState<number>(0);
+  const [taskStartTime, setTaskStartTime] = useState<number>(0);
+
   /**
    * Adds a new log entry to the development log.
    * @param level - Log level (info, warn, error, debug).
@@ -65,18 +71,55 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
         currentTask: data.task,
         taskProgress: 0,
       }));
+      setLoopCount(0);
+      setRemainingTime(10000); // Start with 10 seconds remaining
+      setOverallProgress(0); // Reset overall progress
+      setTaskStartTime(data.task.startTime || Date.now()); // Store the original task start time
+    };
+
+    // Server completes a task loop (but task continues).
+    const handleTaskLoopCompleted = (data: {
+      task: ITask;
+      loopCount: number;
+      remainingTime: number;
+    }) => {
+      console.log('Task loop completed:', data);
+      addLog('info', `Task loop ${data.loopCount} completed`, data);
+      setLoopCount(data.loopCount);
+      setRemainingTime(data.remainingTime);
+
+      // Update the task with the new start time for the next loop.
+      setGameState((prev: IGameState) => ({
+        ...prev,
+        currentTask: data.task, // This includes the updated startTime
+        taskProgress: 0, // Reset progress for the new loop
+      }));
     };
 
     // Server completes task - clear current task and show completion.
-    const handleTaskCompleted = (data: { task: ITask }) => {
+    const handleTaskCompleted = (data: {
+      task: ITask;
+      loopCount?: number;
+      totalDuration?: number;
+    }) => {
       console.log('Task completed:', data.task);
-      addLog('info', `Task completed: ${data.task.name}`, data.task);
+      addLog(
+        'info',
+        `Task completed: ${data.task.name} (${data.loopCount || 0} loops)`,
+        data.task
+      );
       setGameState((prev: IGameState) => ({
         ...prev,
         currentTask: null,
-        taskProgress: 0,
+        taskProgress: 100,
       }));
-      alert(`Task "${data.task.name}" completed!`);
+      setLoopCount(0);
+      setRemainingTime(0);
+      setOverallProgress(100); // Set to 100% when task completes
+      setTaskStartTime(0); // Reset task start time
+      alert(
+        `Task "${data.task.name}" completed! (${data.loopCount || 0} loops)`
+      );
     };
 
     // Handle server-side validation errors (e.g., multiple active tasks).
@@ -89,6 +132,7 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
     // Register event listeners.
     socket.on('joined', handleJoined);
     socket.on('taskStarted', handleTaskStarted);
+    socket.on('taskLoopCompleted', handleTaskLoopCompleted);
     socket.on('taskCompleted', handleTaskCompleted);
     socket.on('error', handleError);
 
@@ -101,6 +145,7 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
       addLog('warn', 'Socket disconnected, cleaning up listeners');
       socket.off('joined', handleJoined);
       socket.off('taskStarted', handleTaskStarted);
+      socket.off('taskLoopCompleted', handleTaskLoopCompleted);
       socket.off('taskCompleted', handleTaskCompleted);
       socket.off('error', handleError);
     };
@@ -122,6 +167,21 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
 
     return () => clearInterval(interval);
   }, [gameState.currentTask]);
+
+  // Real-time overall progress tracking for the full cycle.
+  useEffect(() => {
+    if (!taskStartTime) return;
+
+    const totalDuration = 10000; // 10 seconds total
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - taskStartTime;
+      const progress = Math.min((elapsed / totalDuration) * 100, 100);
+      setOverallProgress(progress);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [taskStartTime]);
 
   // Request server to start a new task (server-authoritative).
   const startTask = (taskName: string) => {
@@ -151,6 +211,9 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
   return {
     gameState,
     logs,
+    loopCount,
+    remainingTime,
+    overallProgress,
     startTask,
     getRemainingTime,
   };

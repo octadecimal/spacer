@@ -16,9 +16,9 @@ export interface ISocketEvents {
 
   /**
    * Client requests to start a new task.
-   * @description Emitted with task name when client wants to begin a task.
+   * @description Emitted with task name and optional duration when client wants to begin a task.
    */
-  startTask: (data: { taskName: string }) => void;
+  startTask: (data: { taskName: string; duration?: number }) => void;
 
   /**
    * Client requests current player state.
@@ -40,10 +40,24 @@ export interface ISocketEvents {
   taskStarted: (data: { task: ITask }) => void;
 
   /**
-   * Server notifies that a task has completed.
-   * @description Emitted when task finishes successfully.
+   * Server notifies that a task loop has completed (but task continues).
+   * @description Emitted when a single loop within a task completes.
    */
-  taskCompleted: (data: { task: ITask }) => void;
+  taskLoopCompleted: (data: {
+    task: ITask;
+    loopCount: number;
+    remainingTime: number;
+  }) => void;
+
+  /**
+   * Server notifies that a task has completed (final completion after all loops).
+   * @description Emitted when task finishes successfully after all loops.
+   */
+  taskCompleted: (data: {
+    task: ITask;
+    loopCount?: number;
+    totalDuration?: number;
+  }) => void;
 
   /**
    * Server sends complete player state.
