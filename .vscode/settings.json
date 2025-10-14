@@ -1,11 +1,161 @@
 {
     "files.exclude": {
-      "**/.git": true,
-      "**/.svn": true,
-      "**/.hg": true,
-      "**/.DS_Store": true,
-      "**/Thumbs.db": true,
-      ".gitignore": true
+        // Node.js dependencies
+        "**/node_modules": true,
+        "**/pnpm-lock.yaml": true,
+        "**/package-lock.json": true,
+        "**/yarn.lock": true,
+        // Build outputs
+        "**/dist": true,
+        "**/build": true,
+        "**/.next": true,
+        "**/out": true,
+        "**/.turbo": true,
+        // Cache directories
+        "**/.cache": true,
+        "**/.nx": true,
+        "**/.nx/cache": true,
+        "**/.vite": true,
+        "**/.swc": true,
+        "**/.eslintcache": true,
+        "**/.tsbuildinfo": true,
+        // IDE and editor files
+        "**/.vscode": true,
+        "**/.idea": true,
+        // OS generated files
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/.directory": true,
+        // Logs
+        "**/*.log": true,
+        "**/logs": true,
+        "**/.logs": true,
+        // Temporary files
+        "**/.tmp": true,
+        "**/.temp": true,
+        "**/tmp": true,
+        "**/temp": true,
+        // Testing files and reports
+        "**/*.test.ts": true,
+        "**/*.test.tsx": true,
+        "**/*.test.js": true,
+        "**/*.test.jsx": true,
+        "**/*.spec.ts": true,
+        "**/*.spec.tsx": true,
+        "**/*.spec.js": true,
+        "**/*.spec.jsx": true,
+        "**/coverage": true,
+        "**/.nyc_output": true,
+        "**/test-output": true,
+        // Core config files
+        "**/package.json": true,
+        "**/pnpm-workspace.yaml": true,
+        "**/nx.json": true,
+        "**/tsconfig.json": true,
+        "**/tsconfig.base.json": true,
+        // Environment files
+        "**/.env.local": true,
+        "**/.env.development": true,
+        "**/.env.production": true,
+        "**/.env.test": true,
+        "**/.env.example": true,
+        "**/.env.template": true,
+        // Webpack and bundler configs
+        "**/webpack.config.js": true,
+        "**/webpack.*.js": true,
+        "**/rollup.config.js": true,
+        "**/vite.config.ts": true,
+        "**/vitest.config.ts": true,
+        "**/vitest.workspace.ts": true,
+        // Testing configs
+        "**/jest.config.js": true,
+        "**/jest.config.ts": true,
+        "**/jest.preset.js": true,
+        "**/jest.setup.js": true,
+        "**/jest.setup.ts": true,
+        "**/.jestrc": true,
+        "**/.jestrc.js": true,
+        "**/.jestrc.json": true,
+        // Linting configs
+        "**/.eslintrc.js": true,
+        "**/.eslintrc.json": true,
+        "**/.eslintrc.yml": true,
+        "**/.eslintrc.yaml": true,
+        "**/eslint.config.js": true,
+        "**/eslint.config.mjs": true,
+        "**/.eslintignore": true,
+        // Prettier configs
+        "**/.prettierrc": true,
+        "**/.prettierrc.js": true,
+        "**/.prettierrc.json": true,
+        "**/.prettierrc.yml": true,
+        "**/.prettierrc.yaml": true,
+        "**/prettier.config.js": true,
+        "**/.prettierignore": true,
+        // TypeScript configs (keep base ones visible)
+        "**/tsconfig.*.json": true,
+        "**/tsconfig.app.json": true,
+        "**/tsconfig.spec.json": true,
+        "**/tsconfig.lib.json": true,
+        "**/tsconfig.build.json": true,
+        // PostCSS and CSS configs
+        "**/postcss.config.js": true,
+        "**/postcss.config.ts": true,
+        "**/tailwind.config.js": true,
+        "**/tailwind.config.ts": true,
+        // SWC configs
+        "**/.swcrc": true,
+        "**/.swcrc.json": true,
+        "**/.spec.swcrc": true,
+        // Git files
+        "**/.gitignore": true,
+        "**/.gitattributes": true,
+        "**/.gitmodules": true,
+        // Docker files
+        "**/Dockerfile": true,
+        "**/docker-compose.yml": true,
+        "**/docker-compose.yaml": true,
+        "**/.dockerignore": true,
+        // CI/CD files
+        "**/.github/workflows": true,
+        "**/.gitlab-ci.yml": true,
+        "**/.circleci": true,
+        "**/.travis.yml": true,
+        "**/.jenkins": true,
+        // Documentation and markdown files
+        "**/*.md": true,
+        "**/LICENSE": true,
+        "**/LICENSE.md": true,
+        // Misc config files
+        "**/.editorconfig": true,
+        "**/.browserslistrc": true,
+        "**/.nvmrc": true,
+        "**/.node-version": true,
+        "**/babel.config.js": true,
+        "**/babel.config.json": true,
+        "**/.babelrc": true,
+        "**/.babelrc.js": true,
+        "**/.babelrc.json": true
     },
-    "hide-files.files": []
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.nx": true,
+        "**/.nx/cache": true,
+        "**/coverage": true,
+        "**/.cache": true,
+        "**/pnpm-lock.yaml": true,
+        "**/package-lock.json": true,
+        "**/yarn.lock": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/dist/**": true,
+        "**/build/**": true,
+        "**/.nx/**": true,
+        "**/.nx/cache/**": true,
+        "**/.cache/**": true,
+        "**/coverage/**": true
+    }
 }

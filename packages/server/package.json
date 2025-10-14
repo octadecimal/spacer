@@ -87,9 +87,15 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/platform-socket.io": "^11.0.0",
+    "@nestjs/websockets": "^11.0.0",
+    "bufferutil": "^4.0.9",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "tslib": "^2.3.0"
+    "socket.io": "^4.8.0",
+    "ts-invariant": "^0.10.3",
+    "tslib": "^2.3.0",
+    "utf-8-validate": "^6.0.5"
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0"
