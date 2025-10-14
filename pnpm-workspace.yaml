@@ -1,0 +1,12 @@
+packages:
+  - packages/*
+
+autoInstallPeers: true
+
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@parcel/watcher'
+  - esbuild
+  - unrs-resolver
+
+strictPeerDependencies: false
