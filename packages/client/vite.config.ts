@@ -17,6 +17,7 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@spacer/shared': path.resolve(__dirname, '../shared/src'),
     },
   },
   // Uncomment this if you are using workers.

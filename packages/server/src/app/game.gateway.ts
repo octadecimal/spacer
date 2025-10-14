@@ -10,7 +10,7 @@ import { Injectable } from '@nestjs/common';
 import { GamePersistenceService } from './persistence/persistence.service';
 import { IPersistedTask } from '../types/IPersistedTask';
 import { IServerPlayer } from '../types/IServerPlayer';
-import { ITask } from '@spacer/shared';
+import { ITask, getTaskConfig } from '@spacer/shared';
 
 /**
  * WebSocket Gateway - Server-side game logic hub.
@@ -189,13 +189,18 @@ export class GameGateway {
       return;
     }
 
-    // Create new task with server-controlled timing.
-    const taskDuration = data.duration || 2000; // Default 2 seconds per loop
-    const loopDuration = 10000; // 10 seconds total loop duration
+    // Get task configuration from shared config.
+    const taskConfig = getTaskConfig('MINE_ASTEROID'); // For now, hardcode to mine asteroid
+    if (!taskConfig) {
+      client.emit('error', { message: 'Task configuration not found' });
+      return;
+    }
+
+    // Create new task with server-controlled timing from config.
     const task: ITask = {
       id: `task_${Date.now()}`, // Unique task ID
-      name: data.taskName, // Task name from client
-      duration: taskDuration, // Duration per individual task loop
+      name: taskConfig.name, // Task name from config
+      duration: taskConfig.loopDuration, // Duration per individual task loop from config
       startTime: Date.now(), // Server timestamp (prevents cheating)
       completed: false, // Initial state
     };
@@ -213,10 +218,10 @@ export class GameGateway {
     client.emit('taskStarted', { task });
 
     // Schedule continuous task loops for the specified duration.
-    this.scheduleTaskLoops(client, player, task, loopDuration);
+    this.scheduleTaskLoops(client, player, task, taskConfig.totalDuration);
 
     console.log(
-      `Task ${task.name} started for player ${player.id} (${loopDuration}ms duration)`
+      `Task ${task.name} started for player ${player.id} (${taskConfig.totalDuration}ms duration)`
     );
   }
 

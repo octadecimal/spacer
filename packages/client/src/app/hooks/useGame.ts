@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
 import { IGameState } from '../../types/index';
-import { ITask, ISocketEvents } from '@spacer/shared';
+import { ITask, ISocketEvents, getTaskConfig } from '@spacer/shared';
 import { ILogEntry } from '../../components/DevelopmentLog';
 
 /**
@@ -72,7 +72,7 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
         taskProgress: 0,
       }));
       setLoopCount(0);
-      setRemainingTime(10000); // Start with 10 seconds remaining
+      setRemainingTime(getTaskConfig('MINE_ASTEROID')?.totalDuration || 10000); // Use config or fallback
       setOverallProgress(0); // Reset overall progress
       setTaskStartTime(data.task.startTime || Date.now()); // Store the original task start time
     };
@@ -172,7 +172,10 @@ export function useGame(socket: Socket<ISocketEvents> | null) {
   useEffect(() => {
     if (!taskStartTime) return;
 
-    const totalDuration = 10000; // 10 seconds total
+    const taskConfig = getTaskConfig('MINE_ASTEROID'); // For now, hardcode to mine asteroid
+    if (!taskConfig) return;
+
+    const totalDuration = taskConfig.totalDuration;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - taskStartTime;
