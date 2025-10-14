@@ -122,10 +122,9 @@
         "**/.circleci": true,
         "**/.travis.yml": true,
         "**/.jenkins": true,
-        // Documentation and markdown files
-        "**/*.md": true,
-        "**/LICENSE": true,
-        "**/LICENSE.md": true,
+        // Static assets and HTML files
+        "**/*.html": true,
+        "**/*.htm": true,
         // Misc config files
         "**/.editorconfig": true,
         "**/.browserslistrc": true,

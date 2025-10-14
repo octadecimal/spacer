@@ -1,5 +1,14 @@
 import { useSocket } from './hooks/useSocket';
 import { useGame } from './hooks/useGame';
+import {
+  layout,
+  typography,
+  progress,
+  status,
+  spacing,
+  getStatusColor,
+  getButtonClasses,
+} from './styles';
 
 export function Game() {
   const { socket, isConnected } = useSocket();
@@ -9,39 +18,33 @@ export function Game() {
     startTask('Mine Asteroid');
   };
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          Space Mining Game
-        </h1>
+  const isButtonDisabled = !isConnected || !!gameState.currentTask;
 
-        <div className="bg-gray-800 rounded-lg p-6 space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-gray-400">Connection Status:</p>
+  return (
+    <div className={`${layout.page} ${layout.section}`}>
+      <div className={layout.container}>
+        <h1 className={typography.h1}>Space Mining Game</h1>
+
+        <div className={`${layout.card} ${layout.cardSpaced}`}>
+          <div className={status.statusContainer}>
+            <p className={status.statusLabel}>Connection Status:</p>
             <p
-              className={`font-semibold ${
-                isConnected ? 'text-green-400' : 'text-red-400'
-              }`}
+              className={`${status.statusValue} ${getStatusColor(isConnected)}`}
             >
               {isConnected ? 'Connected' : 'Disconnected'}
             </p>
             {gameState.playerId && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className={status.playerInfo}>
                 Player ID: {gameState.playerId}
               </p>
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className={spacing.section}>
             <button
               onClick={handleStartMining}
-              disabled={!isConnected || !!gameState.currentTask}
-              className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
-                !isConnected || gameState.currentTask
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
+              disabled={isButtonDisabled}
+              className={getButtonClasses(isButtonDisabled)}
             >
               {gameState.currentTask
                 ? 'Mining in Progress...'
@@ -49,18 +52,18 @@ export function Game() {
             </button>
 
             {gameState.currentTask && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
+              <div className={spacing.progress}>
+                <div className={progress.info}>
                   <span>Mining Progress</span>
                   <span>{Math.round(gameState.taskProgress)}%</span>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
+                <div className={progress.container}>
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-100"
+                    className={progress.fill}
                     style={{ width: `${gameState.taskProgress}%` }}
                   ></div>
                 </div>
-                <p className="text-xs text-gray-400 text-center">
+                <p className={progress.remaining}>
                   {getRemainingTime()}s remaining
                 </p>
               </div>
