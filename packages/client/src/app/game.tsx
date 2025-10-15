@@ -88,7 +88,7 @@ export function Game() {
   }
 
   return (
-    <div className="h-screen bg-background text-foreground p-4 overflow-hidden">
+    <div className="h-screen bg-background text-foreground p-4 overflow-hidden pt-safe-top">
       <div className="max-w-7xl mx-auto h-full">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
           {/* Inventory Sidebar */}

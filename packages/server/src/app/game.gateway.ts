@@ -215,10 +215,17 @@ export class GameGateway {
       // Resume any active tasks for this player.
       await this.resumeActiveTasks(activePlayer);
 
-      // Confirm connection to client with inventory data.
+      // Find the current active task (if any) to send to client.
+      // Check after resumeActiveTasks in case it modified the task state.
+      const currentActiveTask = activePlayer.tasks.find(
+        (task) => !task.completed && task.startTime
+      );
+
+      // Confirm connection to client with inventory data and current task state.
       client.emit('joined', {
         playerId,
         inventory: activePlayer.inventory,
+        currentTask: currentActiveTask || null,
       });
 
       console.log(
@@ -442,12 +449,18 @@ export class GameGateway {
   ): Promise<void> {
     // Check if player already has an active scheduler.
     if (this.activeTaskSchedulers.has(player.id)) {
-      console.log(`Player ${player.id} already has active tasks running`);
+      console.log(
+        `Player ${player.id} already has active tasks running - updating active player reference`
+      );
+      // Update the active player reference so the scheduler can notify the new client
+      this.activePlayers.set(player.id, player);
       return;
     }
 
-    // Look for any active (non-completed) tasks.
-    const activeTasks = player.tasks.filter((task) => !task.completed);
+    // Look for any active (non-completed and started) tasks.
+    const activeTasks = player.tasks.filter(
+      (task) => !task.completed && task.startTime
+    );
 
     if (activeTasks.length === 0) {
       console.log(`No active tasks to resume for player ${player.id}`);

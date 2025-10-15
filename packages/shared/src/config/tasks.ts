@@ -54,8 +54,8 @@ export const TASK_CONFIGS: Record<string, ITaskConfig> = {
   MINE_ASTEROID: {
     id: 'mine_asteroid',
     name: 'Mine Asteroid',
-    loopDuration: 2000, // 2 seconds per loop
-    totalDuration: 10000, // 10 seconds total
+    loopDuration: 20000, // 20 seconds per loop
+    totalDuration: 100000, // 100 seconds total
     description: 'Extract valuable ore from asteroids',
     rewardsPerLoop: {
       iron: 1, // 1 iron ore per loop

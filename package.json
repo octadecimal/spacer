@@ -8,7 +8,9 @@
         "ios": "pnpm nx cap:ios:dev client",
         "mobile:build": "pnpm nx cap:build client",
         "mobile:sync": "pnpm nx cap:sync client",
-        "mobile:clean": "pnpm nx cap:clean client"
+        "mobile:clean": "pnpm nx cap:clean client",
+        "dev:client": "pnpm nx serve client",
+        "dev:server": "pnpm nx serve server"
     },
     "private": true,
     "devDependencies": {

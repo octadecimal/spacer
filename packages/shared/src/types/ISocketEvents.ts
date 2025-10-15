@@ -29,10 +29,10 @@ export interface ISocketEvents {
 
   // Server to client events
   /**
-   * Server confirms player has joined with player ID and inventory.
+   * Server confirms player has joined with player ID, inventory, and current task state.
    * @description Emitted after successful player registration.
    */
-  joined: (data: { playerId: string; inventory: IInventory }) => void;
+  joined: (data: { playerId: string; inventory: IInventory; currentTask: ITask | null }) => void;
 
   /**
    * Server notifies that a task has started.

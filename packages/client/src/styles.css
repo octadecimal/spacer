@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile app styles with status bar */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+/* Add padding for status bar on mobile */
+@media (max-width: 768px) {
+  html,
+  body,
+  #root {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Add safe area padding for status bar */
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top, 24px);
+  }
+
+  /* Ensure content doesn't overlap with status bar */
+  .min-h-screen {
+    min-height: calc(100vh - env(safe-area-inset-top, 24px));
+  }
+}
+
 @layer base {
   :root {
     --background: 222.2 84% 4.9%;

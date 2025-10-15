@@ -67,17 +67,33 @@ export function useGame(
   useEffect(() => {
     if (!socket) return;
 
-    // Server confirms player joined with unique ID and inventory.
+    // Server confirms player joined with unique ID, inventory, and current task state.
     const handleJoined = (data: {
       playerId: string;
       inventory: IInventory;
+      currentTask: ITask | null;
     }) => {
       console.log('Joined game with player ID:', data.playerId);
       addLog('info', `Joined game with player ID: ${data.playerId}`, data);
+
+      // If there's an active task, set up the client state to track it.
+      if (data.currentTask) {
+        addLog(
+          'info',
+          `Resuming active task: ${data.currentTask.name}`,
+          data.currentTask
+        );
+        setTaskStartTime(data.currentTask.startTime || Date.now());
+        setLoopCount(0); // Will be updated by server when next loop completes
+        setOverallProgress(0); // Will be calculated based on task start time
+      }
+
       setGameState((prev: IGameState) => ({
         ...prev,
         playerId: data.playerId,
         inventory: data.inventory,
+        currentTask: data.currentTask,
+        taskProgress: data.currentTask ? 0 : 0, // Reset progress, will be calculated by useEffect
       }));
     };
 
@@ -188,7 +204,7 @@ export function useGame(
   useEffect(() => {
     if (!gameState.currentTask?.startTime) return;
 
-    // Update progress every 100ms for smooth UI updates.
+    // Update progress every 1 second for smoother UI updates.
     const interval = setInterval(() => {
       const currentTask = gameState.currentTask;
       if (!currentTask?.startTime) return;
@@ -196,7 +212,7 @@ export function useGame(
       const elapsed = Date.now() - currentTask.startTime;
       const progress = Math.min((elapsed / currentTask.duration) * 100, 100);
       setGameState((prev: IGameState) => ({ ...prev, taskProgress: progress }));
-    }, 100);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [gameState.currentTask]);
@@ -214,7 +230,7 @@ export function useGame(
       const elapsed = Date.now() - taskStartTime;
       const progress = Math.min((elapsed / totalDuration) * 100, 100);
       setOverallProgress(progress);
-    }, 100);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [taskStartTime]);
