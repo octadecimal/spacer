@@ -46,3 +46,29 @@ Thumbs.db
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 test-output
+
+# Android
+packages/client/android/app/build/
+packages/client/android/build/
+packages/client/android/.gradle/
+packages/client/android/local.properties
+packages/client/android/app/release/
+packages/client/android/app/debug/
+packages/client/android/captured_assets/
+packages/client/android/gradle.properties
+packages/client/android/gradlew
+packages/client/android/gradlew.bat
+packages/client/android/gradle/wrapper/gradle-wrapper.jar
+
+# iOS
+packages/client/ios/App/build/
+packages/client/ios/build/
+packages/client/ios/Pods/
+packages/client/ios/Podfile.lock
+packages/client/ios/App/App.xcworkspace/xcuserdata/
+packages/client/ios/App/App.xcodeproj/xcuserdata/
+packages/client/ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Capacitor
+packages/client/www/
+packages/client/dist/

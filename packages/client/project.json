@@ -95,7 +95,7 @@
         "cap:android": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "npx cap run android",
+                "command": "npx cap run android --target=29141FDH300L6T",
                 "cwd": "packages/client"
             }
         },
