@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { IInventory, IInventoryItem } from '@spacer/shared';
-import { useItemConfig } from '@/app/hooks/useItemConfig';
-import { FormatUtils } from '@/lib/formatUtils';
+import { IInventory } from '@spacer/shared';
+import { InventoryItem } from './InventoryItem';
 
 /**
  * Props for the Inventory component.
@@ -23,8 +22,6 @@ interface IInventoryProps {
  * Shows items with quantities and provides a clean, organized view.
  */
 export function Inventory({ inventory, className }: IInventoryProps) {
-  const { getItemDisplayName, getItemCategory, getItemValue } = useItemConfig();
-
   // Convert inventory items to array for rendering.
   const inventoryItems = Object.values(inventory.items);
 
@@ -49,42 +46,9 @@ export function Inventory({ inventory, className }: IInventoryProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {inventoryItems.map((item: IInventoryItem) => {
-              const displayName = getItemDisplayName(item.itemId);
-              const category = getItemCategory(item.itemId);
-              const value = getItemValue(item.itemId);
-              const totalValue = value * item.quantity;
-
-              return (
-                <div
-                  key={item.itemId}
-                  className="bg-card border rounded-lg p-3 hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-sm">{displayName}</h3>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {category}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-sm">
-                        {FormatUtils.formatNumber(item.quantity)}
-                      </div>
-                      {value > 0 && (
-                        <div className="text-xs text-muted-foreground">
-                          {FormatUtils.formatNumber(totalValue)} value
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    Acquired: {FormatUtils.formatDate(item.acquiredAt)}
-                  </div>
-                </div>
-              );
-            })}
+            {inventoryItems.map((item) => (
+              <InventoryItem key={item.itemId} item={item} />
+            ))}
           </div>
         )}
       </CardContent>

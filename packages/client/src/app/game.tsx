@@ -1,14 +1,16 @@
 import { useSocket } from './hooks/useSocket';
 import { useGame } from './hooks/useGame';
 import { useAuth } from './hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { DevelopmentLog } from '@/components/DevelopmentLog';
 import { Inventory } from '@/components/Inventory';
 import { Login } from '@/components/Login';
-import { FormatUtils } from '@/lib/formatUtils';
-import { layout, typography, status, spacing, getStatusColor } from './styles';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { UserInfoCard } from '@/components/UserInfoCard';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
+import { TaskProgress } from '@/components/TaskProgress';
+import { MiningButton } from '@/components/MiningButton';
+import { layout, typography } from './styles';
 
 export function Game() {
   // Authentication state management
@@ -49,18 +51,16 @@ export function Game() {
 
   const isButtonDisabled = !isConnected || !!gameState.currentTask;
 
-  // Show login screen if not logged in
+  // Show loading screen if not initialized
   if (!isInitialized) {
     return (
-      <div className="h-screen bg-background text-foreground flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="h-screen bg-background text-foreground">
+        <LoadingSpinner message="Loading..." className="h-full" />
       </div>
     );
   }
 
+  // Show login screen if not logged in
   if (!isLoggedIn) {
     return (
       <div className="h-screen bg-background text-foreground flex items-center justify-center p-4">
@@ -81,21 +81,7 @@ export function Game() {
           {/* Inventory Sidebar */}
           <div className="lg:col-span-1 flex flex-col min-h-0 space-y-4">
             {/* User Info Card */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Logged in as:
-                    </p>
-                    <p className="font-semibold">{username}</p>
-                  </div>
-                  <Button onClick={handleLogout} variant="outline" size="sm">
-                    Logout
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <UserInfoCard username={username} onLogout={handleLogout} />
 
             <Inventory
               inventory={gameState.inventory}
@@ -113,80 +99,28 @@ export function Game() {
 
                 <Card className={layout.cardSpaced}>
                   <CardHeader>
-                    <div className={status.statusContainer}>
-                      <p className={status.statusLabel}>Connection Status:</p>
-                      <p
-                        className={`${status.statusValue} ${getStatusColor(
-                          isConnected
-                        )}`}
-                      >
-                        {isConnected ? 'Connected' : 'Disconnected'}
-                      </p>
-                      {gameState.playerId && (
-                        <p className={status.playerInfo}>
-                          Player ID: {gameState.playerId}
-                        </p>
-                      )}
-                    </div>
+                    <ConnectionStatus
+                      isConnected={isConnected}
+                      playerId={gameState.playerId}
+                    />
                   </CardHeader>
 
-                  <CardContent className={spacing.section}>
-                    <Button
-                      onClick={handleStartMining}
+                  <CardContent className="space-y-4">
+                    <MiningButton
+                      isTaskActive={!!gameState.currentTask}
                       disabled={isButtonDisabled}
+                      onClick={handleStartMining}
                       className="w-full"
-                    >
-                      {gameState.currentTask
-                        ? 'Mining in Progress...'
-                        : 'Mine Asteroid'}
-                    </Button>
+                    />
 
                     {gameState.currentTask && (
-                      <div className={spacing.progress}>
-                        <div className="flex justify-between text-sm">
-                          <span>Mining Progress</span>
-                          <span>
-                            {FormatUtils.formatPercentage(
-                              gameState.taskProgress
-                            )}
-                          </span>
-                        </div>
-                        <Progress
-                          value={gameState.taskProgress}
-                          className="w-full"
-                        />
-                        {/* Overall cycle progress bar */}
-                        <div className="mt-2">
-                          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                            <span>Overall Progress</span>
-                            <span>
-                              {FormatUtils.formatPercentage(
-                                gameState.overallProgress
-                              )}
-                            </span>
-                          </div>
-                          <Progress
-                            value={gameState.overallProgress}
-                            className="w-full h-1"
-                          />
-                        </div>
-                        {/* Debug info */}
-                        <div className="text-xs text-red-500 text-center">
-                          Debug:{' '}
-                          {FormatUtils.formatPercentage(
-                            gameState.taskProgress,
-                            2
-                          )}{' '}
-                          | Loop: {loopCount} | Remaining:{' '}
-                          {FormatUtils.formatRemainingTime(remainingTime)}
-                        </div>
-                        <div className="text-xs text-muted-foreground text-center space-y-1">
-                          <p>Loop {loopCount} completed</p>
-                          <p>
-                            {FormatUtils.formatRemainingTime(remainingTime)}
-                          </p>
-                        </div>
-                      </div>
+                      <TaskProgress
+                        taskProgress={gameState.taskProgress}
+                        overallProgress={gameState.overallProgress}
+                        loopCount={loopCount}
+                        remainingTime={remainingTime}
+                        showDebug={true}
+                      />
                     )}
                   </CardContent>
                 </Card>
