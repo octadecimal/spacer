@@ -8,7 +8,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
 import { GamePersistenceService } from './persistence/persistence.service';
-import { IPersistedTask } from '../types/IPersistedTask';
 import { IServerPlayer } from '../types/IServerPlayer';
 import {
   ITask,
@@ -16,7 +15,10 @@ import {
   getTaskConfig,
   getItemConfig,
   IInventoryItem,
+  ErrorFactory,
+  TaskError,
 } from '@spacer/shared';
+import { TaskConversionUtils } from './utils/taskConversionUtils';
 
 /**
  * WebSocket Gateway - Server-side game logic hub.
@@ -64,45 +66,6 @@ export class GameGateway {
         });
       }
     }, 1000);
-  }
-
-  /**
-   * Convert persisted task to active game task.
-   * Maps between persistence layer and real-time game state.
-   * @param persistedTask The persisted task.
-   * @returns The active game task.
-   */
-  private convertPersistedTaskToTask(persistedTask: IPersistedTask): ITask {
-    return {
-      id: persistedTask.id,
-      name: persistedTask.name,
-      duration: persistedTask.duration,
-      startTime: persistedTask.startTime,
-      completed: persistedTask.completed,
-    };
-  }
-
-  /**
-   * Convert active game task to persisted task.
-   * Maps between real-time game state and persistence layer.
-   * @param task The active game task.
-   * @param playerId The player ID.
-   * @returns The persisted task.
-   */
-  private convertTaskToPersistedTask(
-    task: ITask,
-    playerId: string
-  ): IPersistedTask {
-    return {
-      id: task.id,
-      playerId,
-      name: task.name,
-      duration: task.duration,
-      startTime: task.startTime,
-      completed: task.completed,
-      completedAt: task.completed ? Date.now() : undefined,
-      createdAt: Date.now(),
-    };
   }
 
   /**
@@ -198,9 +161,8 @@ export class GameGateway {
       );
 
       // Convert persisted tasks to active game tasks.
-      const activeTasks: ITask[] = persistedTasks.map(
-        this.convertPersistedTaskToTask
-      );
+      const activeTasks: ITask[] =
+        TaskConversionUtils.convertPersistedTasksToTasks(persistedTasks);
 
       // Create active player instance using persisted data.
       const activePlayer: IServerPlayer & { tasks: ITask[] } = {
@@ -217,8 +179,8 @@ export class GameGateway {
 
       // Find the current active task (if any) to send to client.
       // Check after resumeActiveTasks in case it modified the task state.
-      const currentActiveTask = activePlayer.tasks.find(
-        (task) => !task.completed && task.startTime
+      const currentActiveTask = TaskConversionUtils.findMostRecentActiveTask(
+        activePlayer.tasks
       );
 
       // Confirm connection to client with inventory data and current task state.
@@ -233,7 +195,15 @@ export class GameGateway {
       );
     } catch (error) {
       console.error('Failed to handle player join:', error);
-      client.emit('error', { message: 'Failed to join game' });
+      const gameError =
+        error instanceof TaskError
+          ? error
+          : ErrorFactory.task('Failed to join game', error);
+      client.emit('error', {
+        message: gameError.message,
+        code: gameError.code,
+        details: gameError.details,
+      });
     }
   }
 
@@ -290,23 +260,33 @@ export class GameGateway {
 
     // Validate player exists.
     if (!player) {
-      client.emit('error', { message: 'Player not found' });
+      const error = ErrorFactory.validation('Player not found');
+      client.emit('error', {
+        message: error.message,
+        code: error.code,
+      });
       return;
     }
 
     // Server-authoritative: Prevent multiple active tasks.
-    const activeTask = player.tasks.find(
-      (task) => !task.completed && task.startTime
-    );
+    const activeTask = player.tasks.find(TaskConversionUtils.isTaskActive);
     if (activeTask) {
-      client.emit('error', { message: 'You already have an active task' });
+      const error = ErrorFactory.task('You already have an active task');
+      client.emit('error', {
+        message: error.message,
+        code: error.code,
+      });
       return;
     }
 
     // Get task configuration from shared config.
     const taskConfig = getTaskConfig('MINE_ASTEROID'); // For now, hardcode to mine asteroid
     if (!taskConfig) {
-      client.emit('error', { message: 'Task configuration not found' });
+      const error = ErrorFactory.task('Task configuration not found');
+      client.emit('error', {
+        message: error.message,
+        code: error.code,
+      });
       return;
     }
 
@@ -323,7 +303,10 @@ export class GameGateway {
     player.tasks.push(task);
 
     // Persist task to database (durability).
-    const persistedTask = this.convertTaskToPersistedTask(task, player.id);
+    const persistedTask = TaskConversionUtils.convertTaskToPersistedTask(
+      task,
+      player.id
+    );
     this.persistenceService.saveTask(persistedTask).catch((error) => {
       console.error(`Failed to persist task ${task.id}:`, error);
     });
@@ -458,9 +441,7 @@ export class GameGateway {
     }
 
     // Look for any active (non-completed and started) tasks.
-    const activeTasks = player.tasks.filter(
-      (task) => !task.completed && task.startTime
-    );
+    const activeTasks = player.tasks.filter(TaskConversionUtils.isTaskActive);
 
     if (activeTasks.length === 0) {
       console.log(`No active tasks to resume for player ${player.id}`);
@@ -509,7 +490,11 @@ export class GameGateway {
 
     // Validate player exists.
     if (!player) {
-      client.emit('error', { message: 'Player not found' });
+      const error = ErrorFactory.validation('Player not found');
+      client.emit('error', {
+        message: error.message,
+        code: error.code,
+      });
       return;
     }
 

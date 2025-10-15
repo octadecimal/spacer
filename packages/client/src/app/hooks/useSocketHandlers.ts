@@ -113,10 +113,25 @@ export function useSocketHandlers(
     };
 
     // Handle server-side validation errors (e.g., multiple active tasks).
-    const handleError = (data: { message: string }) => {
-      console.error('Server error:', data.message);
-      addLog('error', `Server error: ${data.message}`, data);
-      alert(`Error: ${data.message}`);
+    const handleError = (data: {
+      message: string;
+      code?: string;
+      details?: unknown;
+    }) => {
+      console.error('Server error:', data.message, data);
+      addLog(
+        'error',
+        `Server error [${data.code || 'UNKNOWN'}]: ${data.message}`,
+        data
+      );
+
+      // Show user-friendly error message
+      const userMessage =
+        data.code === 'TASK_ERROR' && data.message.includes('active task')
+          ? 'You already have a task running. Please wait for it to complete.'
+          : data.message;
+
+      alert(`Error: ${userMessage}`);
     };
 
     // Handle inventory updates from server.

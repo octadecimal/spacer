@@ -32,7 +32,11 @@ export interface ISocketEvents {
    * Server confirms player has joined with player ID, inventory, and current task state.
    * @description Emitted after successful player registration.
    */
-  joined: (data: { playerId: string; inventory: IInventory; currentTask: ITask | null }) => void;
+  joined: (data: {
+    playerId: string;
+    inventory: IInventory;
+    currentTask: ITask | null;
+  }) => void;
 
   /**
    * Server notifies that a task has started.
@@ -70,7 +74,7 @@ export interface ISocketEvents {
    * Server sends an error message.
    * @description Emitted when an error occurs during processing.
    */
-  error: (data: { message: string }) => void;
+  error: (data: { message: string; code?: string; details?: unknown }) => void;
 
   /**
    * Server notifies that player inventory has been updated.
@@ -78,3 +82,17 @@ export interface ISocketEvents {
    */
   inventoryUpdated: (data: { inventory: IInventory }) => void;
 }
+
+/**
+ * Type-safe event names for socket events.
+ * Provides compile-time checking for event names.
+ */
+export type SocketEventNames = keyof ISocketEvents;
+
+/**
+ * Type-safe event data types for socket events.
+ * Provides compile-time checking for event data structures.
+ */
+export type SocketEventData<T extends SocketEventNames> = Parameters<
+  ISocketEvents[T]
+>[0];

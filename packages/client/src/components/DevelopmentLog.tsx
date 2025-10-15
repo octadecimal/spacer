@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn, typography } from '@/app/styles';
+import { FormatUtils } from '@/lib/formatUtils';
 
 /**
  * Log entry interface for development logging.
@@ -72,22 +73,6 @@ export const DevelopmentLog: React.FC<IDevelopmentLogProps> = ({
     }
   };
 
-  /**
-   * Formats a timestamp for display.
-   * @param timestamp - The timestamp to format.
-   * @returns Formatted time string.
-   */
-  const formatTime = (timestamp: Date): string => {
-    return (
-      timestamp.toLocaleTimeString('en-US', {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }) + `.${timestamp.getMilliseconds().toString().padStart(3, '0')}`
-    );
-  };
-
   return (
     <div
       className={cn(
@@ -119,7 +104,7 @@ export const DevelopmentLog: React.FC<IDevelopmentLogProps> = ({
               <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold uppercase">{log.level}</span>
                 <span className={typography.muted}>
-                  {formatTime(log.timestamp)}
+                  {FormatUtils.formatTimeWithMs(log.timestamp)}
                 </span>
               </div>
               <div className="text-foreground">{log.message}</div>

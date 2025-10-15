@@ -1,59 +1,46 @@
-import { useState, useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useGame } from './hooks/useGame';
+import { useAuth } from './hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { DevelopmentLog } from '@/components/DevelopmentLog';
 import { Inventory } from '@/components/Inventory';
 import { Login } from '@/components/Login';
-import { Storage } from '@/lib/storage';
+import { FormatUtils } from '@/lib/formatUtils';
 import { layout, typography, status, spacing, getStatusColor } from './styles';
 
 export function Game() {
-  // Login state management
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>('');
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
-
-  // Initialize login state from storage
-  useEffect(() => {
-    const initializeLoginState = async () => {
-      const savedUsername = await Storage.getItem('spacer_username');
-      if (savedUsername) {
-        setUsername(savedUsername);
-        setIsLoggedIn(true);
-      }
-      setIsInitialized(true);
-    };
-    initializeLoginState();
-  }, []);
+  // Authentication state management
+  const { isLoggedIn, username, isInitialized, login, logout } = useAuth();
 
   const { socket, isConnected } = useSocket();
-  const {
-    gameState,
-    logs,
-    loopCount,
-    remainingTime,
-    overallProgress,
-    startTask,
-  } = useGame(socket, isLoggedIn ? username : undefined);
+  const { gameState, logs, loopCount, remainingTime, startTask } = useGame(
+    socket,
+    isLoggedIn ? username : undefined
+  );
 
   /**
    * Handles successful login.
    * @param loggedInUsername The username that was logged in.
    */
-  const handleLogin = (loggedInUsername: string) => {
-    setUsername(loggedInUsername);
-    setIsLoggedIn(true);
+  const handleLogin = async (loggedInUsername: string) => {
+    try {
+      await login(loggedInUsername);
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
 
   /**
    * Handles logout.
    */
-  const handleLogout = () => {
-    setUsername('');
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const handleStartMining = () => {
@@ -158,7 +145,11 @@ export function Game() {
                       <div className={spacing.progress}>
                         <div className="flex justify-between text-sm">
                           <span>Mining Progress</span>
-                          <span>{Math.round(gameState.taskProgress)}%</span>
+                          <span>
+                            {FormatUtils.formatPercentage(
+                              gameState.taskProgress
+                            )}
+                          </span>
                         </div>
                         <Progress
                           value={gameState.taskProgress}
@@ -168,22 +159,32 @@ export function Game() {
                         <div className="mt-2">
                           <div className="flex justify-between text-xs text-muted-foreground mb-1">
                             <span>Overall Progress</span>
-                            <span>{Math.round(overallProgress)}%</span>
+                            <span>
+                              {FormatUtils.formatPercentage(
+                                gameState.overallProgress
+                              )}
+                            </span>
                           </div>
                           <Progress
-                            value={overallProgress}
+                            value={gameState.overallProgress}
                             className="w-full h-1"
                           />
                         </div>
                         {/* Debug info */}
                         <div className="text-xs text-red-500 text-center">
-                          Debug: {gameState.taskProgress.toFixed(2)}% | Loop:{' '}
-                          {loopCount} | Remaining:{' '}
-                          {Math.round(remainingTime / 1000)}s
+                          Debug:{' '}
+                          {FormatUtils.formatPercentage(
+                            gameState.taskProgress,
+                            2
+                          )}{' '}
+                          | Loop: {loopCount} | Remaining:{' '}
+                          {FormatUtils.formatRemainingTime(remainingTime)}
                         </div>
                         <div className="text-xs text-muted-foreground text-center space-y-1">
                           <p>Loop {loopCount} completed</p>
-                          <p>{Math.round(remainingTime / 1000)}s remaining</p>
+                          <p>
+                            {FormatUtils.formatRemainingTime(remainingTime)}
+                          </p>
                         </div>
                       </div>
                     )}

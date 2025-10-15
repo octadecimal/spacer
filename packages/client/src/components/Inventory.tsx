@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IInventory, IInventoryItem } from '@spacer/shared';
-import { getItemConfig } from '@spacer/shared';
+import { useItemConfig } from '@/app/hooks/useItemConfig';
+import { FormatUtils } from '@/lib/formatUtils';
 
 /**
  * Props for the Inventory component.
@@ -22,44 +23,7 @@ interface IInventoryProps {
  * Shows items with quantities and provides a clean, organized view.
  */
 export function Inventory({ inventory, className }: IInventoryProps) {
-  /**
-   * Formats a timestamp to a readable date string.
-   * @param timestamp Unix timestamp in milliseconds.
-   * @returns Formatted date string.
-   */
-  const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleDateString();
-  };
-
-  /**
-   * Gets the display name for an item.
-   * @param itemId The item ID.
-   * @returns The item's display name or fallback.
-   */
-  const getItemDisplayName = (itemId: string): string => {
-    const itemConfig = getItemConfig(itemId);
-    return itemConfig?.name || itemId;
-  };
-
-  /**
-   * Gets the display category for an item.
-   * @param itemId The item ID.
-   * @returns The item's category or fallback.
-   */
-  const getItemCategory = (itemId: string): string => {
-    const itemConfig = getItemConfig(itemId);
-    return itemConfig?.category || 'unknown';
-  };
-
-  /**
-   * Gets the base value for an item.
-   * @param itemId The item ID.
-   * @returns The item's base value or 0.
-   */
-  const getItemValue = (itemId: string): number => {
-    const itemConfig = getItemConfig(itemId);
-    return itemConfig?.baseValue || 0;
-  };
+  const { getItemDisplayName, getItemCategory, getItemValue } = useItemConfig();
 
   // Convert inventory items to array for rendering.
   const inventoryItems = Object.values(inventory.items);
@@ -105,18 +69,18 @@ export function Inventory({ inventory, className }: IInventoryProps) {
                     </div>
                     <div className="text-right">
                       <div className="font-semibold text-sm">
-                        {item.quantity.toLocaleString()}
+                        {FormatUtils.formatNumber(item.quantity)}
                       </div>
                       {value > 0 && (
                         <div className="text-xs text-muted-foreground">
-                          {totalValue.toLocaleString()} value
+                          {FormatUtils.formatNumber(totalValue)} value
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    Acquired: {formatDate(item.acquiredAt)}
+                    Acquired: {FormatUtils.formatDate(item.acquiredAt)}
                   </div>
                 </div>
               );
