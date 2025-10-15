@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Storage } from '@/lib/storage';
 
 /**
  * Props for the Login component.
@@ -44,13 +45,16 @@ export function Login({
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   /**
-   * Loads saved username from localStorage on component mount.
+   * Loads saved username from storage on component mount.
    */
   useEffect(() => {
-    const savedUsername = localStorage.getItem('spacer_username');
-    if (savedUsername) {
-      setUsername(savedUsername);
-    }
+    const loadSavedUsername = async () => {
+      const savedUsername = await Storage.getItem('spacer_username');
+      if (savedUsername) {
+        setUsername(savedUsername);
+      }
+    };
+    loadSavedUsername();
   }, []);
 
   /**
@@ -67,8 +71,8 @@ export function Login({
     setIsLoading(true);
 
     try {
-      // Save username to localStorage
-      localStorage.setItem('spacer_username', username.trim());
+      // Save username to storage
+      await Storage.setItem('spacer_username', username.trim());
 
       // Notify parent component
       onLogin(username.trim());
@@ -82,9 +86,9 @@ export function Login({
   /**
    * Handles logout action.
    */
-  const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem('spacer_username');
+  const handleLogout = async () => {
+    // Clear storage
+    await Storage.removeItem('spacer_username');
 
     // Reset form
     setUsername('');

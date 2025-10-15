@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useGame } from './hooks/useGame';
 import { Button } from '@/components/ui/button';
@@ -7,18 +7,27 @@ import { Progress } from '@/components/ui/progress';
 import { DevelopmentLog } from '@/components/DevelopmentLog';
 import { Inventory } from '@/components/Inventory';
 import { Login } from '@/components/Login';
+import { Storage } from '@/lib/storage';
 import { layout, typography, status, spacing, getStatusColor } from './styles';
 
 export function Game() {
   // Login state management
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    // Check localStorage on initial render
-    return !!localStorage.getItem('spacer_username');
-  });
-  const [username, setUsername] = useState<string>(() => {
-    // Load username from localStorage on initial render
-    return localStorage.getItem('spacer_username') || '';
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  // Initialize login state from storage
+  useEffect(() => {
+    const initializeLoginState = async () => {
+      const savedUsername = await Storage.getItem('spacer_username');
+      if (savedUsername) {
+        setUsername(savedUsername);
+        setIsLoggedIn(true);
+      }
+      setIsInitialized(true);
+    };
+    initializeLoginState();
+  }, []);
 
   const { socket, isConnected } = useSocket();
   const {
@@ -54,6 +63,17 @@ export function Game() {
   const isButtonDisabled = !isConnected || !!gameState.currentTask;
 
   // Show login screen if not logged in
+  if (!isInitialized) {
+    return (
+      <div className="h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <div className="h-screen bg-background text-foreground flex items-center justify-center p-4">

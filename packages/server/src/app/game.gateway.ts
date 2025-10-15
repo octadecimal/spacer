@@ -46,13 +46,25 @@ export class GameGateway {
   private activePlayers: Map<string, IServerPlayer & { tasks: ITask[] }> =
     new Map();
 
+  // Active task schedulers - continues running even when client disconnects.
+  private activeTaskSchedulers: Map<string, NodeJS.Timeout> = new Map();
+
   /**
    * Constructor.
    * @param persistenceService The persistence service.
    */
   public constructor(
     private readonly persistenceService: GamePersistenceService
-  ) {}
+  ) {
+    // Set up disconnect handler when server is ready.
+    setTimeout(() => {
+      if (this.server) {
+        this.server.on('disconnect', (client: Socket) => {
+          this.handleDisconnect(client);
+        });
+      }
+    }, 1000);
+  }
 
   /**
    * Convert persisted task to active game task.
@@ -200,6 +212,9 @@ export class GameGateway {
       // Store active player in memory for fast real-time access.
       this.activePlayers.set(playerId, activePlayer);
 
+      // Resume any active tasks for this player.
+      await this.resumeActiveTasks(activePlayer);
+
       // Confirm connection to client with inventory data.
       client.emit('joined', {
         playerId,
@@ -212,6 +227,28 @@ export class GameGateway {
     } catch (error) {
       console.error('Failed to handle player join:', error);
       client.emit('error', { message: 'Failed to join game' });
+    }
+  }
+
+  /**
+   * Handle client disconnection.
+   * Cleans up active task schedulers but keeps tasks running server-side.
+   * @param client The disconnected client.
+   */
+  public handleDisconnect(client: Socket): void {
+    // Find the player associated with this socket.
+    for (const [playerId, player] of this.activePlayers.entries()) {
+      if (player.socketId === client.id) {
+        console.log(`Player ${playerId} disconnected (socket ${client.id})`);
+
+        // Remove from active players but keep tasks running server-side.
+        this.activePlayers.delete(playerId);
+
+        // Note: We don't clear the task scheduler here because tasks should continue
+        // running even when the client disconnects. The scheduler will be cleared
+        // when the task completes or when the player reconnects.
+        break;
+      }
     }
   }
 
@@ -288,7 +325,7 @@ export class GameGateway {
     client.emit('taskStarted', { task });
 
     // Schedule continuous task loops for the specified duration.
-    this.scheduleTaskLoops(client, player, task, taskConfig);
+    this.scheduleTaskLoops(player, task, taskConfig);
 
     console.log(
       `Task ${task.name} started for player ${player.id} (${taskConfig.totalDuration}ms duration)`
@@ -298,13 +335,12 @@ export class GameGateway {
   /**
    * Schedules continuous task loops for a specified duration.
    * Creates multiple task completion cycles within the total duration.
-   * @param client The client socket.
+   * Works server-side even when client disconnects.
    * @param player The player object.
    * @param task The task to loop.
    * @param taskConfig The task configuration containing duration and rewards.
    */
   private scheduleTaskLoops(
-    client: Socket,
     player: IServerPlayer & { tasks: ITask[] },
     task: ITask,
     taskConfig: ITaskConfig
@@ -325,12 +361,21 @@ export class GameGateway {
           console.error(`Failed to complete final task ${task.id}:`, error);
         });
 
-        // Notify client of final completion.
-        client.emit('taskCompleted', {
-          task: { ...task, completed: true },
-          loopCount,
-          totalDuration: taskConfig.totalDuration,
-        });
+        // Notify connected client if available.
+        const activePlayer = this.activePlayers.get(player.id);
+        if (activePlayer?.socketId) {
+          const client = this.server.sockets.sockets.get(activePlayer.socketId);
+          if (client) {
+            client.emit('taskCompleted', {
+              task: { ...task, completed: true },
+              loopCount,
+              totalDuration: taskConfig.totalDuration,
+            });
+          }
+        }
+
+        // Clear the scheduler.
+        this.activeTaskSchedulers.delete(player.id);
 
         console.log(
           `Task ${task.name} completed ${loopCount} loops for player ${player.id} (${taskConfig.totalDuration}ms total)`
@@ -346,7 +391,7 @@ export class GameGateway {
         for (const [itemId, quantityPerLoop] of Object.entries(
           taskConfig.rewardsPerLoop
         )) {
-          this.addItemToInventory(player, itemId, quantityPerLoop, client);
+          this.addItemToInventory(player, itemId, quantityPerLoop);
         }
       }
 
@@ -365,19 +410,65 @@ export class GameGateway {
       // Update task start time for next loop BEFORE notifying client.
       task.startTime = Date.now();
 
-      // Notify client of loop completion.
-      client.emit('taskLoopCompleted', {
-        task: { ...task },
-        loopCount,
-        remainingTime,
-      });
+      // Notify connected client if available.
+      const activePlayer = this.activePlayers.get(player.id);
+      if (activePlayer?.socketId) {
+        const client = this.server.sockets.sockets.get(activePlayer.socketId);
+        if (client) {
+          client.emit('taskLoopCompleted', {
+            task: { ...task },
+            loopCount,
+            remainingTime,
+          });
+        }
+      }
 
       // Schedule next loop.
       setTimeout(runLoop, task.duration);
     };
 
-    // Start the first loop.
-    setTimeout(runLoop, task.duration);
+    // Store the scheduler for this player.
+    const scheduler = setTimeout(runLoop, task.duration);
+    this.activeTaskSchedulers.set(player.id, scheduler);
+  }
+
+  /**
+   * Resumes active tasks for a player when they reconnect.
+   * Checks for any running tasks and resumes their execution.
+   * @param player The player object.
+   */
+  private async resumeActiveTasks(
+    player: IServerPlayer & { tasks: ITask[] }
+  ): Promise<void> {
+    // Check if player already has an active scheduler.
+    if (this.activeTaskSchedulers.has(player.id)) {
+      console.log(`Player ${player.id} already has active tasks running`);
+      return;
+    }
+
+    // Look for any active (non-completed) tasks.
+    const activeTasks = player.tasks.filter((task) => !task.completed);
+
+    if (activeTasks.length === 0) {
+      console.log(`No active tasks to resume for player ${player.id}`);
+      return;
+    }
+
+    // Resume the most recent active task.
+    const activeTask = activeTasks[activeTasks.length - 1];
+    const taskConfig = getTaskConfig(activeTask.name);
+
+    if (!taskConfig) {
+      console.error(`No task config found for active task: ${activeTask.name}`);
+      return;
+    }
+
+    console.log(
+      `Resuming active task ${activeTask.name} for player ${player.id}`
+    );
+
+    // Resume the task loops.
+    this.scheduleTaskLoops(player, activeTask, taskConfig);
   }
 
   /**

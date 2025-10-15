@@ -1,10 +1,52 @@
 # Spacer
 
+An incremental space mining game built with React, NestJS, Socket.IO, and Capacitor for cross-platform deployment.
+
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
 ✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+
+## Quick Start
+
+### Web Development
+
+```bash
+# Start the server
+pnpm nx serve server
+
+# Start the client (in another terminal)
+pnpm nx serve client
+```
+
+### Mobile Development
+
+```bash
+# Android development
+pnpm nx cap:android:dev client
+
+# iOS development (macOS only)
+pnpm nx cap:ios:dev client
+```
+
+## Project Structure
+
+- **`packages/client`** - React frontend with Capacitor for mobile deployment
+- **`packages/server`** - NestJS backend with Socket.IO for real-time communication
+- **`packages/shared`** - Shared types and configurations between client and server
+
+## Mobile Development
+
+This project uses Capacitor to deploy the React web app to mobile platforms. See [docs/NX_MOBILE_TARGETS.md](docs/NX_MOBILE_TARGETS.md) for detailed mobile development instructions.
+
+### Available Mobile Targets
+
+- `cap:build` - Build web app and sync with mobile platforms
+- `cap:android:dev` - Complete Android development workflow
+- `cap:ios:dev` - Complete iOS development workflow
+- `cap:sync` - Sync web assets with mobile platforms
+- `cap:clean` - Clean Capacitor cache
 
 ## Generate a library
 
@@ -97,12 +139,13 @@ Nx Console is an editor extension that enriches your developer experience. It le
 
 Learn more:
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
+- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 - [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 - [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 - [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
 And join the Nx community:
+
 - [Discord](https://go.nx.dev/community)
 - [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
 - [Our Youtube channel](https://www.youtube.com/@nxdevtools)

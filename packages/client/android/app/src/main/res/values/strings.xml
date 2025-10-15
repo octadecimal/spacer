@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Spacer</string>
+    <string name="title_activity_main">Spacer</string>
+    <string name="package_name">com.octadecimal.spacer</string>
+    <string name="custom_url_scheme">com.octadecimal.spacer</string>
+</resources>
